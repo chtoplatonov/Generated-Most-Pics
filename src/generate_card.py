@@ -55,13 +55,23 @@ def build_card_data(
     weather_client = weather_client or WeatherClient()
     weather = weather_client.fetch()
 
+    scores = []
     if traffic_client is None:
         api_key = os.environ.get("YANDEX_TRAFFIC_API_KEY")
-        if not api_key:
-            raise RuntimeError("YANDEX_TRAFFIC_API_KEY environment variable is required for traffic data")
-        traffic_client = YandexTrafficClient(TrafficConfig(api_key=api_key, directions=DEFAULT_DIRECTIONS))
+        if api_key:
+            traffic_client = YandexTrafficClient(TrafficConfig(api_key=api_key, directions=DEFAULT_DIRECTIONS))
+        else:
+            LOGGER.warning(
+                "Traffic key not provided; traffic data will be skipped and default scores will be used."
+            )
 
-    scores = traffic_client.fetch_scores()
+    if traffic_client is not None:
+        try:
+            scores = traffic_client.fetch_scores()
+        except Exception as exc:  # pragma: no cover - defensive path
+            LOGGER.warning("Не удалось получить данные пробок: %s", exc)
+            scores = []
+
     score_map = {score.direction: score for score in scores}
     traffic_to_crimea = score_map.get("в Крым") or TrafficScore(direction="в Крым", score=0)
     traffic_to_kuban = score_map.get("на Кубань") or TrafficScore(direction="на Кубань", score=0)
@@ -222,8 +232,6 @@ def main(argv: Optional[list[str]] = None) -> None:
     traffic_key = args.traffic_key or os.environ.get("YANDEX_TRAFFIC_API_KEY")
     if traffic_key:
         traffic_client = YandexTrafficClient(TrafficConfig(api_key=traffic_key, directions=DEFAULT_DIRECTIONS))
-    else:
-        LOGGER.warning("Traffic key not provided; traffic fetch will fail")
 
     card_data = build_card_data(
         message_text,
