@@ -105,14 +105,11 @@ class BridgeCardBot:
         LOGGER.info("Card published for message %s", message.id)
 
     async def run(self) -> None:
-        await self.client.start()
-        try:
+        async with self.client:
             await self._log_chat_context()
+            LOGGER.info("BridgeCardBot запущен. Ожидаем сообщения…")
             await idle()
-        finally:
-            LOGGER.info("Остановка BridgeCardBot")
-            await self.client.stop()
-            LOGGER.info("BridgeCardBot остановлен")
+            LOGGER.info("Получен сигнал остановки, завершаем работу…")
 
     async def _log_chat_context(self) -> None:
         source_label = await self._describe_chat(self.source_chat)
@@ -197,10 +194,12 @@ def run_bot_from_env() -> None:
 
         cleaned = cleaned.split("?", 1)[0]
         cleaned = cleaned.split("/", 1)[0]
-        cleaned = cleaned.lstrip("@")
 
         if cleaned.lstrip("-").isdigit():
             return int(cleaned)
+
+        if not cleaned.startswith("@"):
+            cleaned = f"@{cleaned}"
         return cleaned
 
     source_chat_raw = os.environ.get("TELEGRAM_SOURCE_CHAT")
