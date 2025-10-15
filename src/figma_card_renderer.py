@@ -9,11 +9,16 @@ from pathlib import Path
 from typing import Callable, Dict
 
 import json
+import logging
 import time
 
 import requests
 
 from .models import CardData
+from .ollama_helper import suggest_layer_mapping
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 FIGMA_API_URL = "https://api.figma.com/v1"
@@ -64,8 +69,10 @@ class FigmaLayerConfig:
 class FigmaRenderSettings:
     token: str
     file_key: str
-    frame_node_id: str
+    frame_node_id: str | None
     branch_id: str | None = None
+    frame_node_path: Sequence[str] | None = None
+    frame_name_hint: str | None = None
     text_factories: Dict[str, TextFactory] = field(default_factory=_build_default_factories)
 
 
@@ -83,6 +90,7 @@ class FigmaCardRenderer:
         self.settings = settings
         self.session = requests.Session()
         self.session.headers.update({"X-Figma-Token": settings.token})
+        self._frame_document_cache: tuple[str, Mapping[str, object]] | None = None
 
     @classmethod
     def from_env(
@@ -92,8 +100,14 @@ class FigmaCardRenderer:
     ) -> "FigmaCardRenderer":
         token = _require_env("FIGMA_TOKEN")
         file_key = _require_env("FIGMA_FILE_KEY")
-        frame_node_id = _require_env("FIGMA_CARD_NODE_ID")
+        frame_node_id = _optional_env("FIGMA_CARD_NODE_ID")
         branch_id = _optional_env("FIGMA_BRANCH_ID")
+        frame_node_path = _split_path_env(_optional_env("FIGMA_CARD_NODE_PATH"))
+        frame_name_hint = _optional_env("FIGMA_CARD_FRAME_NAME")
+        if not frame_node_id and not frame_node_path and not frame_name_hint:
+            raise RuntimeError(
+                "Укажите FIGMA_CARD_NODE_ID или FIGMA_CARD_NODE_PATH, или FIGMA_CARD_FRAME_NAME"
+            )
         factories = _build_default_factories()
         template_overrides: Mapping[str, str] = {}
         if layer_config_path:
@@ -109,6 +123,8 @@ class FigmaCardRenderer:
             file_key=file_key,
             frame_node_id=frame_node_id,
             branch_id=branch_id,
+            frame_node_path=frame_node_path,
+            frame_name_hint=frame_name_hint,
             text_factories=factories,
         )
         return cls(settings)
@@ -116,11 +132,6 @@ class FigmaCardRenderer:
     def render_card(self, card_data: CardData, *, poll_timeout: float = 30.0) -> bytes:
         text_values = {name: factory(card_data) for name, factory in self.settings.text_factories.items()}
         node_ids = self._resolve_node_ids(text_values.keys())
-        missing = [name for name, node_id in node_ids.items() if node_id is None]
-        if missing:
-            raise RuntimeError(
-                "Не удалось найти слои в макете Figma: " + ", ".join(sorted(missing))
-            )
         updates = {node_id: text_values[name] for name, node_id in node_ids.items() if node_id}
         self._update_text_nodes(updates)
         image_url = self._request_image_url()
@@ -131,20 +142,171 @@ class FigmaCardRenderer:
     # ------------------------------------------------------------------
     # Internal helpers
     def _resolve_node_ids(self, layer_names: Iterable[str]) -> Dict[str, str | None]:
+        _, frame_document = self._get_frame_document()
+        lookup = {name: None for name in layer_names}
+        self._traverse_nodes(frame_document, lookup)
+        missing = [name for name, node_id in lookup.items() if node_id is None]
+        if missing:
+            ai_mapping = self._suggest_nodes_with_ai(frame_document, missing)
+            if ai_mapping:
+                for desired_name, suggested_layer in ai_mapping.items():
+                    node_id = self._find_node_id_by_name(frame_document, suggested_layer)
+                    if node_id:
+                        lookup[desired_name] = node_id
+        still_missing = [name for name, node_id in lookup.items() if node_id is None]
+        if still_missing:
+            raise RuntimeError(
+                "Не удалось найти слои в макете Figma: " + ", ".join(sorted(still_missing))
+            )
+        return lookup
+
+    def _get_frame_document(self) -> tuple[str, Mapping[str, object]]:
+        if self._frame_document_cache:
+            return self._frame_document_cache
+        if self.settings.frame_node_id:
+            frame = self._fetch_frame_document_by_id(self.settings.frame_node_id)
+            if frame:
+                self._frame_document_cache = (self.settings.frame_node_id, frame)
+                return self._frame_document_cache
+            LOGGER.warning(
+                "Фрейм %s не найден, попробую подобрать по имени",
+                self.settings.frame_node_id,
+            )
+        frame_candidate = self._search_frame_document()
+        if frame_candidate:
+            node_id, frame = frame_candidate
+            self.settings.frame_node_id = node_id
+            self._frame_document_cache = (node_id, frame)
+            return node_id, frame
+        raise RuntimeError("Не удалось получить фрейм карточки из Figma")
+
+    def _fetch_frame_document_by_id(self, node_id: str) -> Mapping[str, object] | None:
         response = self.session.get(
             f"{FIGMA_API_URL}/files/{self.settings.file_key}/nodes",
-            params={"ids": self.settings.frame_node_id, **self._branch_param()},
+            params={"ids": node_id, **self._branch_param()},
+            timeout=20,
+        )
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            LOGGER.warning("Figma вернула ошибку при запросе фрейма %s: %s", node_id, exc)
+            return None
+        payload = response.json()
+        nodes = payload.get("nodes", {})
+        frame = nodes.get(node_id, {}).get("document") if isinstance(nodes, Mapping) else None
+        if isinstance(frame, Mapping):
+            return frame
+        return None
+
+    def _search_frame_document(self) -> tuple[str, Mapping[str, object]] | None:
+        response = self.session.get(
+            f"{FIGMA_API_URL}/files/{self.settings.file_key}",
+            params=self._branch_param(),
             timeout=20,
         )
         response.raise_for_status()
         payload = response.json()
-        nodes = payload.get("nodes", {})
-        frame = nodes.get(self.settings.frame_node_id, {}).get("document")
-        if not frame:
-            raise RuntimeError("Не удалось получить фрейм карточки из Figma")
-        lookup = {name: None for name in layer_names}
-        self._traverse_nodes(frame, lookup)
-        return lookup
+        document = payload.get("document")
+        if not isinstance(document, Mapping):
+            return None
+        if self.settings.frame_node_path:
+            node = document
+            node_id = node.get("id") if isinstance(node, Mapping) else None
+            for expected_name in self.settings.frame_node_path:
+                node, node_id = self._find_child_by_name(node, expected_name)
+                if node is None or node_id is None:
+                    LOGGER.warning(
+                        "Не удалось найти элемент %s в пути %s",
+                        expected_name,
+                        "/".join(self.settings.frame_node_path),
+                    )
+                    node = None
+                    break
+            if node and node_id:
+                return node_id, node
+        if self.settings.frame_name_hint:
+            match = self._find_first_by_name(document, self.settings.frame_name_hint)
+            if match:
+                return match
+        return None
+
+    def _find_child_by_name(
+        self, node: Mapping[str, object] | None, expected_name: str
+    ) -> tuple[Mapping[str, object] | None, str | None]:
+        if not isinstance(node, Mapping):
+            return None, None
+        children = node.get("children")
+        if isinstance(children, Sequence):
+            for child in children:
+                if isinstance(child, Mapping) and child.get("name") == expected_name:
+                    node_id = child.get("id")
+                    if isinstance(node_id, str):
+                        return child, node_id
+        return None, None
+
+    def _find_first_by_name(
+        self, node: Mapping[str, object], expected_name: str
+    ) -> tuple[str, Mapping[str, object]] | None:
+        queue = [node]
+        while queue:
+            current = queue.pop(0)
+            if not isinstance(current, Mapping):
+                continue
+            name = current.get("name")
+            node_id = current.get("id")
+            if name == expected_name and isinstance(node_id, str):
+                return node_id, current
+            children = current.get("children")
+            if isinstance(children, Sequence):
+                for child in children:
+                    if isinstance(child, Mapping):
+                        queue.append(child)
+        return None
+
+    def _find_node_id_by_name(
+        self, node: Mapping[str, object], target_name: str
+    ) -> str | None:
+        if not isinstance(node, Mapping):
+            return None
+        if node.get("name") == target_name and isinstance(node.get("id"), str):
+            return node.get("id")  # type: ignore[return-value]
+        children = node.get("children")
+        if isinstance(children, Sequence):
+            for child in children:
+                if isinstance(child, Mapping):
+                    node_id = self._find_node_id_by_name(child, target_name)
+                    if node_id:
+                        return node_id
+        return None
+
+    def _suggest_nodes_with_ai(
+        self, frame_document: Mapping[str, object], missing: Sequence[str]
+    ) -> Dict[str, str]:
+        available_names = sorted({
+            node_name
+            for node_name in self._collect_layer_names(frame_document)
+        })
+        if not available_names:
+            return {}
+        try:
+            return suggest_layer_mapping(missing, available_names)
+        except Exception as exc:  # pragma: no cover - зависит от окружения
+            LOGGER.warning("Не удалось получить подсказку от Ollama: %s", exc)
+            return {}
+
+    def _collect_layer_names(self, node: Mapping[str, object]) -> Iterable[str]:
+        if not isinstance(node, Mapping):
+            return []
+        result = []
+        name = node.get("name")
+        if isinstance(name, str):
+            result.append(name)
+        children = node.get("children")
+        if isinstance(children, Sequence):
+            for child in children:
+                if isinstance(child, Mapping):
+                    result.extend(self._collect_layer_names(child))
+        return result
 
     def _traverse_nodes(self, node: Mapping[str, object], lookup: MutableMapping[str, str | None]) -> None:
         name = node.get("name") if isinstance(node, Mapping) else None
@@ -178,7 +340,8 @@ class FigmaCardRenderer:
         response.raise_for_status()
 
     def _request_image_url(self) -> str | None:
-        params = {"ids": self.settings.frame_node_id, "format": "png"}
+        frame_id = self._ensure_frame_id()
+        params = {"ids": frame_id, "format": "png"}
         params.update(self._branch_param())
         response = self.session.get(
             f"{FIGMA_API_URL}/images/{self.settings.file_key}",
@@ -188,7 +351,7 @@ class FigmaCardRenderer:
         response.raise_for_status()
         payload = response.json()
         images = payload.get("images", {})
-        return images.get(self.settings.frame_node_id)
+        return images.get(frame_id)
 
     def _download_image(self, url: str, *, poll_timeout: float) -> bytes:
         deadline = time.time() + poll_timeout
@@ -205,6 +368,10 @@ class FigmaCardRenderer:
         if self.settings.branch_id:
             return {"branch_id": self.settings.branch_id}
         return {}
+
+    def _ensure_frame_id(self) -> str:
+        frame_id, _ = self._get_frame_document()
+        return frame_id
 
 
 def _factories_from_templates(templates: Mapping[str, str]) -> Dict[str, TextFactory]:
@@ -263,6 +430,14 @@ def _optional_env(name: str) -> str | None:
 
     value = environ.get(name)
     return value or None
+
+
+def _split_path_env(value: str | None) -> Sequence[str] | None:
+    if not value:
+        return None
+    parts = [segment.strip() for segment in value.replace("\\", "/").split("/")]
+    cleaned = [segment for segment in parts if segment]
+    return tuple(cleaned) or None
 
 
 __all__ = ["FigmaCardRenderer", "FigmaRenderSettings", "FigmaLayerConfig"]
