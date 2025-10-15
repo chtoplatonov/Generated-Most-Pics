@@ -11,8 +11,8 @@
 1. **Получает сообщение** из Telegram-канала с информацией о мосте.
 2. **Извлекает время и текст** по каждому направлению.
 3. **Подгружает данные**: актуальную погоду и баллы пробок из Яндекс.Карт.
-4. **Собирает карточку-изображение**, оформленную по заданному шаблону.
-5. **(Опционально) Публикует** результат обратно в Telegram через бота.
+4. **Собирает карточку-изображение** через Figma API по макету «Главный мост. Карточка».
+5. **(Опционально) Публикует** результат обратно в Telegram через бота (включая ветку суперчата).
 
 ---
 
@@ -25,6 +25,7 @@
 | Telegram-аккаунт | Для создания API-ID, API-Hash и бота | [my.telegram.org](https://my.telegram.org) |
 | BotFather | Выдаёт токен Telegram-бота | В Telegram найдите @BotFather |
 | Яндекс.Карты API ключ | Для данных о загруженности | [developer.tech.yandex.ru](https://developer.tech.yandex.ru/) |
+| Figma Personal Access Token | Чтобы обращаться к макету «Главный мост. Карточка» | [www.figma.com/developers/api#authentication](https://www.figma.com/developers/api#authentication) |
 
 > Если у вас ещё нет аккаунтов или ключей — получите их перед началом работы. Без них бот не сможет собрать информацию.
 
@@ -66,7 +67,11 @@
    - `TELEGRAM_SOURCE_CHAT` — ссылка или ID канала, откуда берёте сообщения.
    - `TELEGRAM_DESTINATION_CHAT` — куда отправлять карточки (можно тот же канал).
    - `YANDEX_TRAFFIC_API_KEY` — ключ от Яндекс.Карт Traffic API.
-   - (Опционально) `CARD_BACKGROUND` — путь к вашему изображению фона.
+   - `FIGMA_TOKEN` — персональный токен Figma.
+   - `FIGMA_FILE_KEY` — ключ файла с макетом «Главный мост. Карточка».
+   - `FIGMA_CARD_NODE_ID` — идентификатор фрейма карточки.
+   - (Опционально) `FIGMA_BRANCH_ID` — ветка Figma, если макет хранится не в основной версии.
+   - (Опционально) `FIGMA_LAYER_CONFIG` — путь к JSON-файлу с настройками слоёв.
 
 ---
 
@@ -89,6 +94,9 @@
 
 ```bash
 export YANDEX_TRAFFIC_API_KEY="ваш_ключ"
+export FIGMA_TOKEN="ваш_figma_token"
+export FIGMA_FILE_KEY="ключ_файла"
+export FIGMA_CARD_NODE_ID="ID_фрейма"
 echo "09:00
 
 Со стороны Тамани очереди перед пунктом ручного досмотра нет." | \
@@ -97,9 +105,9 @@ echo "09:00
 
 Пояснения:
 
-- Скрипт автоматически загрузит погоду и баллы загруженности.
-- Файл сохранится по пути, указанному после `-o` (папка `output` создаётся заранее).
-- Если нужно изменить фон, добавьте параметр `--background path/to/image.jpg`.
+- Скрипт автоматически загрузит погоду, баллы загруженности и заполнит макет в Figma.
+- Файл сохранится по пути, указанному после `-o` (папка `output` создаётся автоматически).
+- Чтобы переопределить текстовые слои, передайте файл с шаблонами через `--figma-layer-config`.
 
 ---
 
@@ -112,7 +120,11 @@ echo "09:00
    export TELEGRAM_BOT_TOKEN=123456:ABC
    export TELEGRAM_SOURCE_CHAT=@bridge_source
    export TELEGRAM_DESTINATION_CHAT=@bridge_target
+   export TELEGRAM_DESTINATION_THREAD_ID=123456
    export YANDEX_TRAFFIC_API_KEY=ваш_ключ
+   export FIGMA_TOKEN=ваш_figma_token
+   export FIGMA_FILE_KEY=ключ_файла
+   export FIGMA_CARD_NODE_ID=ID_фрейма
    ```
    > Если не задать `TELEGRAM_DESTINATION_CHAT`, бот опубликует карточку в тот же канал, откуда пришло сообщение.
 
@@ -123,8 +135,8 @@ echo "09:00
 
 3. **Как это работает**:
    - бот слушает сообщения в канале-источнике;
-   - при появлении нового сообщения строит карточку;
-   - отправляет изображение в целевой канал.
+   - при появлении нового сообщения строит карточку в Figma;
+   - отправляет изображение в целевой канал и ветку (если задан `TELEGRAM_DESTINATION_THREAD_ID`).
 
 Для остановки нажмите `Ctrl+C` в терминале.
 
@@ -144,9 +156,9 @@ python -m compileall src
 
 ## Кастомизация внешнего вида
 
-- **Фон карточки**: укажите файл через флаг `--background` или переменную `CARD_BACKGROUND`.
-- **Шрифты**: Pillow использует `DejaVu Sans`. При необходимости укажите свой шрифт через параметры `--font-regular` и `--font-bold` в `src.generate_card`.
-- **Цвета индикаторов**: 0–3 — зелёный, 4–6 — жёлтый, 7–10 — красный. Логику можно изменить в `src/card_generator.py`.
+- **Текстовые слои в Figma**: переименуйте их в макете или подключите собственные шаблоны через `FIGMA_LAYER_CONFIG`/`--figma-layer-config`.
+- **Формат текста**: в JSON-файле можно использовать плейсхолдеры `report_time`, `generated_at`, `weather`, `traffic_to_crimea` и `traffic_to_kuban`. Пример — [`assets/figma_layers.sample.json`](assets/figma_layers.sample.json).
+- **Стили в макете**: любые визуальные изменения (цвета, шрифты, фон) меняются непосредственно в Figma.
 
 ---
 
@@ -155,9 +167,10 @@ python -m compileall src
 ```
 assets/
   setup_helper.html      # Визуальная страница для настройки переменных
+  figma_layers.sample.json # Пример сопоставления слоёв Figma и данных
 requirements.txt         # Список Python-зависимостей
 src/
-  card_generator.py      # Логика отрисовки карточки
+  figma_card_renderer.py # Работа с Figma API
   data_providers/        # Погода и трафик
   generate_card.py       # CLI для ручной генерации
   message_parser.py      # Разбор текстов из Telegram

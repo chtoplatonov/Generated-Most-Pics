@@ -11,6 +11,7 @@ from pyrogram import Client, filters
 from pyrogram.handlers import MessageHandler
 from pyrogram.types import Message
 
+from .figma_card_renderer import FigmaCardRenderer
 from .generate_card import build_card_data, generate_card_image
 from .data_providers.weather import WeatherClient
 from .data_providers.traffic import TrafficConfig, YandexTrafficClient, DirectionConfig
@@ -30,13 +31,16 @@ class BridgeCardBot:
         bot_token: str,
         source_chat: str | int,
         destination_chat: Optional[str | int] = None,
+        destination_thread_id: Optional[int] = None,
         session_name: str = "bridge_card_bot",
         background: Optional[str | os.PathLike[str]] = None,
     ) -> None:
         self.source_chat = source_chat
         self.destination_chat = destination_chat or source_chat
+        self.destination_thread_id = destination_thread_id
         self.background = background
         self.weather_client = WeatherClient()
+        self.figma_renderer = FigmaCardRenderer.from_env()
 
         traffic_key = os.environ.get("YANDEX_TRAFFIC_API_KEY")
         if not traffic_key:
@@ -69,7 +73,7 @@ class BridgeCardBot:
                 weather_client=self.weather_client,
                 traffic_client=self.traffic_client,
             )
-            image = generate_card_image(card_data)
+            image = generate_card_image(card_data, figma_renderer=self.figma_renderer)
         except Exception as exc:  # noqa: BLE001 - top-level handler to notify chat
             LOGGER.exception("Failed to generate card: %s", exc)
             await client.send_message(self.destination_chat, f"Не удалось создать карточку: {exc}")
@@ -79,7 +83,12 @@ class BridgeCardBot:
         image.save(buffer, format="JPEG", quality=95)
         buffer.seek(0)
         caption = f"{card_data.report.time:%H:%M} — обновление по Крымскому мосту"
-        await client.send_photo(self.destination_chat, photo=buffer, caption=caption)
+        await client.send_photo(
+            self.destination_chat,
+            photo=buffer,
+            caption=caption,
+            message_thread_id=self.destination_thread_id,
+        )
         LOGGER.info("Card published for message %s", message.id)
 
     async def run(self) -> None:
@@ -95,6 +104,8 @@ def run_bot_from_env() -> None:
     bot_token = os.environ["TELEGRAM_BOT_TOKEN"]
     source_chat = os.environ.get("TELEGRAM_SOURCE_CHAT")
     destination_chat = os.environ.get("TELEGRAM_DESTINATION_CHAT", source_chat)
+    destination_thread_id_raw = os.environ.get("TELEGRAM_DESTINATION_THREAD_ID")
+    destination_thread_id = int(destination_thread_id_raw) if destination_thread_id_raw else None
     background = os.environ.get("CARD_BACKGROUND")
 
     if not source_chat:
@@ -106,6 +117,7 @@ def run_bot_from_env() -> None:
         bot_token=bot_token,
         source_chat=source_chat,
         destination_chat=destination_chat,
+        destination_thread_id=destination_thread_id,
         background=background,
     )
     asyncio.run(bot.run())

@@ -7,13 +7,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from io import BytesIO
+
 from PIL import Image
 
-from .card_generator import render_card
 from .data_providers.traffic import DirectionConfig, TrafficConfig, YandexTrafficClient
 from .data_providers.weather import WeatherClient
 from .message_parser import parse_bridge_message
 from .models import CardData, TrafficScore
+from .figma_card_renderer import FigmaCardRenderer
 
 
 LOGGER = logging.getLogger(__name__)
@@ -61,8 +63,15 @@ def build_card_data(
     return card_data
 
 
-def generate_card_image(card_data: CardData) -> Image.Image:
-    return render_card(card_data)
+def generate_card_image(
+    card_data: CardData,
+    *,
+    figma_renderer: FigmaCardRenderer | None = None,
+    figma_layer_config: str | None = None,
+) -> Image.Image:
+    renderer = figma_renderer or FigmaCardRenderer.from_env(layer_config_path=figma_layer_config)
+    image_bytes = renderer.render_card(card_data)
+    return Image.open(BytesIO(image_bytes))
 
 
 def _read_message(path: str | os.PathLike[str] | None) -> str:
@@ -83,6 +92,11 @@ def main(argv: Optional[list[str]] = None) -> None:
         default=None,
     )
     parser.add_argument("--log-level", help="Logging level", default="INFO")
+    parser.add_argument(
+        "--figma-layer-config",
+        help="Path to JSON overrides for mapping card data to Figma layers",
+        default=None,
+    )
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=getattr(logging, args.log_level.upper(), logging.INFO))
@@ -104,7 +118,7 @@ def main(argv: Optional[list[str]] = None) -> None:
         weather_client=weather_client,
         traffic_client=traffic_client,
     )
-    card = generate_card_image(card_data)
+    card = generate_card_image(card_data, figma_layer_config=args.figma_layer_config)
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     card.save(output_path, format=output_path.suffix.replace(".", "").upper() or "PNG")

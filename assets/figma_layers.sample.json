@@ -1,0 +1,11 @@
+{
+  "Дата": "{report_time:%d.%m.%Y}",
+  "Время": "{report_time:%H:%M}",
+  "Обновлено": "Обновлено в {generated_at:%H:%M}",
+  "Температура": "{weather_temp_c:+.0f}°C",
+  "Погодное описание": "{weather_description}",
+  "Баллы в Крым": "{traffic_to_crimea.score} баллов",
+  "Баллы на Кубань": "{traffic_to_kuban.score} баллов",
+  "Комментарий в Крым": "{kerch_text}",
+  "Комментарий на Кубань": "{taman_text}"
+}
