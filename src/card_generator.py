@@ -11,9 +11,26 @@ from PIL import Image, ImageDraw, ImageFont
 from .models import CardData, TrafficScore
 
 
-CARD_SIZE = (1280, 960)
+BASE_CARD_SIZE = (1280, 960)
+CARD_SIZE = (1436, 1080)
+SCALE_X = CARD_SIZE[0] / BASE_CARD_SIZE[0]
+SCALE_Y = CARD_SIZE[1] / BASE_CARD_SIZE[1]
+
+
+def _scale_x(value: float) -> int:
+    return max(1, int(round(value * SCALE_X)))
+
+
+def _scale_y(value: float) -> int:
+    return max(1, int(round(value * SCALE_Y)))
+
+
+def _scale_font(value: float) -> int:
+    return max(1, int(round(value * SCALE_Y)))
+
+
 PANEL_COUNT = 4
-PANEL_RADIUS = 50
+PANEL_RADIUS = _scale_x(50)
 PANEL_FILL = (255, 255, 255, 180)
 PANEL_BORDER = (255, 255, 255, 230)
 ACCENT_COLOR = (35, 70, 120)
@@ -193,17 +210,17 @@ def render_card(data: CardData) -> Image.Image:
     overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
 
-    title_font = _load_font(DEFAULT_FONT_BOLD, 60)
-    subtitle_font = _load_font(DEFAULT_FONT, 48)
-    medium_font = _load_font(DEFAULT_FONT_BOLD, 72)
-    weather_font = _load_font(DEFAULT_FONT_BOLD, 88)
+    title_font = _load_font(DEFAULT_FONT_BOLD, _scale_font(60))
+    subtitle_font = _load_font(DEFAULT_FONT, _scale_font(48))
+    medium_font = _load_font(DEFAULT_FONT_BOLD, _scale_font(72))
+    weather_font = _load_font(DEFAULT_FONT_BOLD, _scale_font(88))
 
-    panel_width = 260
-    panel_height = 240
-    gap = 30
+    panel_width = _scale_x(260)
+    panel_height = _scale_y(240)
+    gap = _scale_x(30)
     total_width = PANEL_COUNT * panel_width + (PANEL_COUNT - 1) * gap
     start_x = (CARD_SIZE[0] - total_width) // 2
-    top_y = 90
+    top_y = _scale_y(90)
 
     for index in range(PANEL_COUNT):
         x = start_x + index * (panel_width + gap)
@@ -216,13 +233,13 @@ def render_card(data: CardData) -> Image.Image:
     date_text = _format_date(data.generated_at)
     time_text = f"{data.report.time:%H:%M}"
     draw.text(
-        (first_rect[0] + 40, first_rect[1] + 50),
+        (first_rect[0] + _scale_x(40), first_rect[1] + _scale_y(50)),
         date_text,
         font=title_font,
         fill=ACCENT_COLOR,
     )
     draw.text(
-        (first_rect[0] + 40, first_rect[1] + 140),
+        (first_rect[0] + _scale_x(40), first_rect[1] + _scale_y(140)),
         time_text,
         font=weather_font,
         fill=ACCENT_COLOR,
@@ -236,7 +253,7 @@ def render_card(data: CardData) -> Image.Image:
         top_y + panel_height,
     )
     category = _weather_category(data.weather.condition_code)
-    icon = _create_weather_icon(category, 150)
+    icon = _create_weather_icon(category, _scale_y(150))
     icon_x = int(second_rect[0] + panel_width * 0.18)
     icon_y = int(second_rect[1] + panel_height * 0.18)
     overlay.alpha_composite(icon, dest=(icon_x, icon_y))

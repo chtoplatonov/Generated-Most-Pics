@@ -142,7 +142,7 @@
       overflow: hidden;
       border: 1px dashed rgba(148, 163, 184, 0.4);
       background: linear-gradient(160deg, rgba(59, 130, 246, 0.2), rgba(129, 140, 248, 0.2)), rgba(15, 23, 42, 0.68);
-      aspect-ratio: 1080 / 1350;
+      aspect-ratio: 1436 / 1080;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -497,7 +497,7 @@
         <div class="marker-config">
           <div>
             <h3>Координаты и подписи</h3>
-            <p>Координаты задаются в пикселях относительно изображения 1080×1350. Настройте значения и сохраните конфигурацию для использования в пайплайне генерации карточки.</p>
+            <p>Координаты задаются в пикселях относительно изображения 1436×1080. Настройте значения и сохраните конфигурацию для использования в пайплайне генерации карточки.</p>
           </div>
           <div class="marker-fields">
             <div class="marker-field" data-marker="date">
@@ -505,14 +505,14 @@
               <label>
                 Горизонталь (px)
                 <span>
-                  <input type="number" min="0" max="1080" step="1" value="140" data-axis="x" />
+                  <input type="number" min="0" max="1436" step="1" value="186" data-axis="x" />
                   <span class="axis-output" data-axis-output="x">13% по ширине</span>
                 </span>
               </label>
               <label>
                 Вертикаль (px)
                 <span>
-                  <input type="number" min="0" max="1350" step="1" value="160" data-axis="y" />
+                  <input type="number" min="0" max="1080" step="1" value="128" data-axis="y" />
                   <span class="axis-output" data-axis-output="y">12% по высоте</span>
                 </span>
               </label>
@@ -528,14 +528,14 @@
               <label>
                 Горизонталь (px)
                 <span>
-                  <input type="number" min="0" max="1080" step="1" value="140" data-axis="x" />
+                  <input type="number" min="0" max="1436" step="1" value="186" data-axis="x" />
                   <span class="axis-output" data-axis-output="x">13% по ширине</span>
                 </span>
               </label>
               <label>
                 Вертикаль (px)
                 <span>
-                  <input type="number" min="0" max="1350" step="1" value="280" data-axis="y" />
+                  <input type="number" min="0" max="1080" step="1" value="224" data-axis="y" />
                   <span class="axis-output" data-axis-output="y">21% по высоте</span>
                 </span>
               </label>
@@ -551,14 +551,14 @@
               <label>
                 Горизонталь (px)
                 <span>
-                  <input type="number" min="0" max="1080" step="1" value="150" data-axis="x" />
+                  <input type="number" min="0" max="1436" step="1" value="200" data-axis="x" />
                   <span class="axis-output" data-axis-output="x">14% по ширине</span>
                 </span>
               </label>
               <label>
                 Вертикаль (px)
                 <span>
-                  <input type="number" min="0" max="1350" step="1" value="430" data-axis="y" />
+                  <input type="number" min="0" max="1080" step="1" value="344" data-axis="y" />
                   <span class="axis-output" data-axis-output="y">32% по высоте</span>
                 </span>
               </label>
@@ -574,14 +574,14 @@
               <label>
                 Горизонталь (px)
                 <span>
-                  <input type="number" min="0" max="1080" step="1" value="820" data-axis="x" />
+                  <input type="number" min="0" max="1436" step="1" value="1090" data-axis="x" />
                   <span class="axis-output" data-axis-output="x">76% по ширине</span>
                 </span>
               </label>
               <label>
                 Вертикаль (px)
                 <span>
-                  <input type="number" min="0" max="1350" step="1" value="620" data-axis="y" />
+                  <input type="number" min="0" max="1080" step="1" value="496" data-axis="y" />
                   <span class="axis-output" data-axis-output="y">46% по высоте</span>
                 </span>
               </label>
@@ -597,14 +597,14 @@
               <label>
                 Горизонталь (px)
                 <span>
-                  <input type="number" min="0" max="1080" step="1" value="820" data-axis="x" />
+                  <input type="number" min="0" max="1436" step="1" value="1090" data-axis="x" />
                   <span class="axis-output" data-axis-output="x">76% по ширине</span>
                 </span>
               </label>
               <label>
                 Вертикаль (px)
                 <span>
-                  <input type="number" min="0" max="1350" step="1" value="820" data-axis="y" />
+                  <input type="number" min="0" max="1080" step="1" value="656" data-axis="y" />
                   <span class="axis-output" data-axis-output="y">61% по высоте</span>
                 </span>
               </label>
@@ -654,15 +654,15 @@
     const markerOutput = document.getElementById('marker-output');
     const copyMarkersButton = document.getElementById('copy-markers');
 
-    const CARD_WIDTH = 1080;
-    const CARD_HEIGHT = 1350;
+    const CARD_WIDTH = 1436;
+    const CARD_HEIGHT = 1080;
 
     const markerState = {
-      date: { label: 'Дата', type: 'text', text: 'СР 08.10', x: 140, y: 160 },
-      time: { label: 'Время', type: 'text', text: '15:00', x: 140, y: 280 },
-      weather: { label: 'Погода', type: 'text', text: '+12° · Облачно', x: 150, y: 430 },
-      crimea: { label: 'В Крым', type: 'traffic', score: 6, x: 820, y: 620 },
-      kuban: { label: 'На Кубань', type: 'traffic', score: 3, x: 820, y: 820 }
+      date: { label: 'Дата', type: 'text', text: 'СР 08.10', x: 186, y: 128 },
+      time: { label: 'Время', type: 'text', text: '15:00', x: 186, y: 224 },
+      weather: { label: 'Погода', type: 'text', text: '+12° · Облачно', x: 200, y: 344 },
+      crimea: { label: 'В Крым', type: 'traffic', score: 6, x: 1090, y: 496 },
+      kuban: { label: 'На Кубань', type: 'traffic', score: 3, x: 1090, y: 656 }
     };
 
     const markerElements = {};
