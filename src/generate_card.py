@@ -14,6 +14,7 @@ from PIL import Image
 
 from .data_providers.traffic import DirectionConfig, TrafficConfig, YandexTrafficClient
 from .data_providers.weather import WeatherClient
+from .env_loader import load_dotenv
 from .message_parser import parse_bridge_message
 from .models import CardData, TrafficScore
 from .figma_card_renderer import FigmaCardRenderer
@@ -219,6 +220,7 @@ def main(argv: Optional[list[str]] = None) -> None:
     raw_argv = list(argv) if argv is not None else sys.argv[1:]
     args = parser.parse_args(_merge_message_arguments(raw_argv))
     logging.basicConfig(level=getattr(logging, args.log_level.upper(), logging.INFO))
+    load_dotenv(logger=LOGGER)
 
     try:
         message_text = _read_message(args.message)

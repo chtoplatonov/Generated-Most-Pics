@@ -13,6 +13,7 @@ from pyrogram import Client, filters, idle
 from pyrogram.handlers import MessageHandler
 from pyrogram.types import Message
 
+from .env_loader import load_dotenv
 from .figma_card_renderer import FigmaCardRenderer
 from .generate_card import build_card_data, generate_card_image
 from .data_providers.weather import WeatherClient
@@ -45,13 +46,19 @@ class BridgeCardBot:
         self.figma_renderer = FigmaCardRenderer.from_env()
 
         traffic_key = os.environ.get("YANDEX_TRAFFIC_API_KEY")
-        if not traffic_key:
-            raise RuntimeError("YANDEX_TRAFFIC_API_KEY must be set for the bot to fetch traffic data")
         directions = (
             DirectionConfig(name="в Крым", longitude=36.5134, latitude=45.3612, radius=2500),
             DirectionConfig(name="на Кубань", longitude=36.5165, latitude=45.3013, radius=2500),
         )
-        self.traffic_client = YandexTrafficClient(TrafficConfig(api_key=traffic_key, directions=directions))
+        if traffic_key:
+            self.traffic_client: YandexTrafficClient | None = YandexTrafficClient(
+                TrafficConfig(api_key=traffic_key, directions=directions)
+            )
+        else:
+            LOGGER.warning(
+                "YANDEX_TRAFFIC_API_KEY не задан. Используем значение 0 баллов для обеих сторон моста."
+            )
+            self.traffic_client = None
 
         session_dir = Path(__file__).resolve().parent.parent / ".telegram_session"
         try:
@@ -136,28 +143,7 @@ class BridgeCardBot:
 def run_bot_from_env() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
-    def _load_dotenv(path: Path = Path(".env")) -> None:
-        if path.exists():
-            try:
-                for raw_line in path.read_text(encoding="utf-8").splitlines():
-                    line = raw_line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    if line.startswith("export "):
-                        line = line[len("export "):].lstrip()
-                    if "=" not in line:
-                        continue
-                    key, value = line.split("=", 1)
-                    cleaned_key = key.strip()
-                    cleaned_value = value.strip()
-                    if cleaned_value and cleaned_value[0] == cleaned_value[-1] and cleaned_value[0] in {'"', "'"}:
-                        cleaned_value = cleaned_value[1:-1]
-                    os.environ.setdefault(cleaned_key, cleaned_value)
-                LOGGER.info("Значения окружения загружены из %s", path)
-            except OSError as exc:
-                LOGGER.warning("Не удалось прочитать %s: %s", path, exc)
-
-    _load_dotenv()
+    load_dotenv(logger=LOGGER)
 
     def _require_env(name: str) -> str:
         value = os.environ.get(name)
