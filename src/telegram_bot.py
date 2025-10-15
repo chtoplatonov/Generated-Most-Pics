@@ -100,6 +100,29 @@ class BridgeCardBot:
 def run_bot_from_env() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
+    def _load_dotenv(path: Path = Path(".env")) -> None:
+        if path.exists():
+            try:
+                for raw_line in path.read_text(encoding="utf-8").splitlines():
+                    line = raw_line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if line.startswith("export "):
+                        line = line[len("export "):].lstrip()
+                    if "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    cleaned_key = key.strip()
+                    cleaned_value = value.strip()
+                    if cleaned_value and cleaned_value[0] == cleaned_value[-1] and cleaned_value[0] in {'"', "'"}:
+                        cleaned_value = cleaned_value[1:-1]
+                    os.environ.setdefault(cleaned_key, cleaned_value)
+                LOGGER.info("Значения окружения загружены из %s", path)
+            except OSError as exc:
+                LOGGER.warning("Не удалось прочитать %s: %s", path, exc)
+
+    _load_dotenv()
+
     def _require_env(name: str) -> str:
         value = os.environ.get(name)
         if value:
