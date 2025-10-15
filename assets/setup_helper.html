@@ -54,15 +54,81 @@
 
     form {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 28px 24px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .field-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      flex-wrap: wrap;
     }
 
     label {
       display: block;
       font-weight: 600;
-      margin-bottom: 8px;
       letter-spacing: 0.01em;
+      margin-right: auto;
+    }
+
+    .hint {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: help;
+      box-shadow: 0 6px 14px -10px rgba(148, 163, 255, 0.8);
+    }
+
+    .hint:focus-visible {
+      outline: 2px solid rgba(148, 163, 255, 0.85);
+      outline-offset: 2px;
+    }
+
+    .tooltip {
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 0;
+      max-width: min(320px, 85vw);
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(148, 163, 255, 0.3);
+      color: var(--text-primary);
+      font-size: 13px;
+      line-height: 1.5;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-6px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .hint:hover + .tooltip,
+    .hint:focus-visible + .tooltip {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
     }
 
     input {
@@ -80,10 +146,6 @@
       outline: none;
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
-    }
-
-    .full-width {
-      grid-column: 1 / -1;
     }
 
     .actions {
@@ -209,24 +271,44 @@
 
     <section>
       <form id="config-form">
-        <div>
-          <label for="api-id">Telegram API ID</label>
+        <div class="field">
+          <div class="field-header">
+            <label for="api-id">Telegram API ID</label>
+            <button type="button" class="hint" aria-describedby="hint-api-id" aria-label="Где взять Telegram API ID?">?</button>
+            <span id="hint-api-id" class="tooltip" role="tooltip">Зайдите на сайт my.telegram.org, авторизуйтесь по номеру телефона, откройте раздел «API development tools» и скопируйте числовой App ID.</span>
+          </div>
           <input id="api-id" name="apiId" type="number" placeholder="Например, 123456" required />
         </div>
-        <div>
-          <label for="api-hash">Telegram API Hash</label>
+        <div class="field">
+          <div class="field-header">
+            <label for="api-hash">Telegram API Hash</label>
+            <button type="button" class="hint" aria-describedby="hint-api-hash" aria-label="Где взять Telegram API Hash?">?</button>
+            <span id="hint-api-hash" class="tooltip" role="tooltip">На той же странице my.telegram.org после создания приложения появится App Hash — скопируйте его целиком без пробелов.</span>
+          </div>
           <input id="api-hash" name="apiHash" type="text" placeholder="40-символьная строка" required />
         </div>
-        <div>
-          <label for="bot-token">Токен Telegram-бота</label>
+        <div class="field">
+          <div class="field-header">
+            <label for="bot-token">Токен Telegram-бота</label>
+            <button type="button" class="hint" aria-describedby="hint-bot-token" aria-label="Где взять токен бота?">?</button>
+            <span id="hint-bot-token" class="tooltip" role="tooltip">Напишите боту @BotFather, создайте или выберите нужного бота и скопируйте токен из ответа (строка вида 123456:ABC-DEF...).</span>
+          </div>
           <input id="bot-token" name="botToken" type="text" placeholder="123456:ABC-DEF..." required />
         </div>
-        <div>
-          <label for="source-chat">Канал-источник</label>
+        <div class="field">
+          <div class="field-header">
+            <label for="source-chat">Канал-источник</label>
+            <button type="button" class="hint" aria-describedby="hint-source-chat" aria-label="Что указать в канале-источнике?">?</button>
+            <span id="hint-source-chat" class="tooltip" role="tooltip">Откройте канал или чат, из которого бот берёт новости, и скопируйте его @username, ссылку t.me/... или числовой ID из раздела «Информация».</span>
+          </div>
           <input id="source-chat" name="sourceChat" type="text" placeholder="@source_channel или -100123456" required />
         </div>
-        <div>
-          <label for="destination-chat">Канал для публикации</label>
+        <div class="field">
+          <div class="field-header">
+            <label for="destination-chat">Канал для публикации</label>
+            <button type="button" class="hint" aria-describedby="hint-destination-chat" aria-label="Нужно ли указывать канал для публикации?">?</button>
+            <span id="hint-destination-chat" class="tooltip" role="tooltip">Если бот публикует материалы в другом канале, скопируйте его @username или ID. Если публикация не нужна, оставьте поле пустым.</span>
+          </div>
           <input
             id="destination-chat"
             name="destinationChat"
@@ -234,8 +316,12 @@
             placeholder="@target_channel (можно оставить пустым)"
           />
         </div>
-        <div>
-          <label for="destination-thread">ID ветки (опционально)</label>
+        <div class="field">
+          <div class="field-header">
+            <label for="destination-thread">ID ветки (опционально)</label>
+            <button type="button" class="hint" aria-describedby="hint-destination-thread" aria-label="Где найти ID ветки?">?</button>
+            <span id="hint-destination-thread" class="tooltip" role="tooltip">Для форум-каналов Telegram откройте нужную тему, выберите «Скопировать ссылку на тему» и возьмите число после /thread/. Оставьте поле пустым для обычных каналов.</span>
+          </div>
           <input
             id="destination-thread"
             name="destinationThread"
@@ -245,12 +331,20 @@
             min="0"
           />
         </div>
-        <div>
-          <label for="yandex-key">Ключ Яндекс.Трафика</label>
+        <div class="field">
+          <div class="field-header">
+            <label for="yandex-key">Ключ Яндекс.Трафика</label>
+            <button type="button" class="hint" aria-describedby="hint-yandex-key" aria-label="Где взять ключ Яндекс.Трафика?">?</button>
+            <span id="hint-yandex-key" class="tooltip" role="tooltip">Войдите в свой аккаунт Яндекса, создайте API-ключ в сервисе «Яндекс.Трафик» на странице разработчика и скопируйте полученную строку.</span>
+          </div>
           <input id="yandex-key" name="yandexKey" type="text" placeholder="AIza... или другой ключ" required />
         </div>
-        <div>
-          <label for="figma-token">Figma Personal Access Token</label>
+        <div class="field">
+          <div class="field-header">
+            <label for="figma-token">Figma Personal Access Token</label>
+            <button type="button" class="hint" aria-describedby="hint-figma-token" aria-label="Как получить токен Figma?">?</button>
+            <span id="hint-figma-token" class="tooltip" role="tooltip">В Figma откройте меню с именем профиля → Settings → Personal access tokens, создайте новый токен и скопируйте его значение.</span>
+          </div>
           <input
             id="figma-token"
             name="figmaToken"
@@ -259,8 +353,12 @@
             required
           />
         </div>
-        <div>
-          <label for="figma-file-key">Figma File Key</label>
+        <div class="field">
+          <div class="field-header">
+            <label for="figma-file-key">Figma File Key</label>
+            <button type="button" class="hint" aria-describedby="hint-figma-file" aria-label="Что такое Figma File Key?">?</button>
+            <span id="hint-figma-file" class="tooltip" role="tooltip">Откройте макет в Figma и скопируйте часть адреса между /file/ и следующим / — это буквенно-цифровой ключ файла.</span>
+          </div>
           <input
             id="figma-file-key"
             name="figmaFileKey"
@@ -269,8 +367,12 @@
             required
           />
         </div>
-        <div>
-          <label for="figma-frame">Figma Card Node ID</label>
+        <div class="field">
+          <div class="field-header">
+            <label for="figma-frame">Figma Card Node ID</label>
+            <button type="button" class="hint" aria-describedby="hint-figma-node" aria-label="Где найти Figma Card Node ID?">?</button>
+            <span id="hint-figma-node" class="tooltip" role="tooltip">Выделите кадр карточки в Figma, нажмите Ctrl/Cmd+L для копирования ссылки и возьмите идентификатор вида 120:456 из конца адреса.</span>
+          </div>
           <input
             id="figma-frame"
             name="figmaCardNodeId"
@@ -279,8 +381,12 @@
             required
           />
         </div>
-        <div>
-          <label for="figma-branch">Figma Branch ID (опционально)</label>
+        <div class="field">
+          <div class="field-header">
+            <label for="figma-branch">Figma Branch ID (опционально)</label>
+            <button type="button" class="hint" aria-describedby="hint-figma-branch" aria-label="Когда нужен Figma Branch ID?">?</button>
+            <span id="hint-figma-branch" class="tooltip" role="tooltip">Если макет находится во ветке, в адресе после /branch/ будет её ID. Скопируйте это значение, а для основной ветки оставьте поле пустым.</span>
+          </div>
           <input
             id="figma-branch"
             name="figmaBranchId"
@@ -288,8 +394,12 @@
             placeholder="например, 1234567890"
           />
         </div>
-        <div>
-          <label for="figma-layer-config">Figma Layer Config (путь)</label>
+        <div class="field">
+          <div class="field-header">
+            <label for="figma-layer-config">Figma Layer Config (путь)</label>
+            <button type="button" class="hint" aria-describedby="hint-figma-config" aria-label="Что указать в Figma Layer Config?">?</button>
+            <span id="hint-figma-config" class="tooltip" role="tooltip">Укажите путь к JSON-файлу с настройками слоёв, если он используется (например, configs/card.json). Если файл не нужен, оставьте поле пустым.</span>
+          </div>
           <input
             id="figma-layer-config"
             name="figmaLayerConfig"
