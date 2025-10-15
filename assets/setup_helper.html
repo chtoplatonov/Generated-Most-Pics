@@ -30,7 +30,7 @@
     }
 
     .wrapper {
-      width: min(980px, 100%);
+      width: min(820px, 100%);
       background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(15, 23, 42, 0.7));
       border-radius: 32px;
       padding: 40px;
@@ -50,11 +50,6 @@
       margin-bottom: 28px;
       color: var(--text-secondary);
       line-height: 1.6;
-    }
-
-    .form-and-canvas {
-      display: grid;
-      gap: 32px;
     }
 
     form {
@@ -91,9 +86,16 @@
       grid-column: 1 / -1;
     }
 
-    button {
+    .actions {
       grid-column: 1 / -1;
-      padding: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    button {
+      padding: 16px 24px;
       border-radius: 16px;
       border: none;
       font-size: 16px;
@@ -103,6 +105,7 @@
       color: #fff;
       background: linear-gradient(135deg, var(--accent), var(--accent-strong));
       transition: transform 0.2s ease, box-shadow 0.2s ease;
+      flex: 1 1 220px;
     }
 
     button:hover {
@@ -114,207 +117,20 @@
       transform: translateY(0);
     }
 
-    .canvas-section {
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 28px;
-      box-shadow: 0 16px 35px -30px rgba(15, 23, 42, 1);
-    }
-
-    .canvas-section h2 {
-      margin-top: 0;
-      margin-bottom: 12px;
-      font-size: 24px;
-      letter-spacing: -0.01em;
-    }
-
-    .canvas-section p {
-      margin-top: 0;
-      margin-bottom: 24px;
-      color: var(--text-secondary);
-      line-height: 1.6;
-    }
-
-    .card-stage {
-      position: relative;
-      border-radius: 28px;
-      overflow: hidden;
-      border: 1px dashed rgba(148, 163, 184, 0.4);
-      background: linear-gradient(160deg, rgba(59, 130, 246, 0.2), rgba(129, 140, 248, 0.2)), rgba(15, 23, 42, 0.68);
-      aspect-ratio: 1436 / 1080;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 32px;
-      isolation: isolate;
-    }
-
-    .card-stage::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image: linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
-      background-size: 72px 72px;
-      mix-blend-mode: screen;
-      opacity: 0.6;
-      pointer-events: none;
-    }
-
-    .card-safe-zone {
-      position: absolute;
-      inset: 6%;
-      border: 1px dashed rgba(148, 163, 184, 0.35);
-      border-radius: 22px;
-      pointer-events: none;
-    }
-
-    .card-background-hint {
-      position: absolute;
-      top: 16px;
-      left: 16px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.72);
-      font-size: 12px;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      pointer-events: none;
-    }
-
-    .marker {
-      position: absolute;
-      transform: translate(-50%, -50%);
-      display: inline-flex;
-      flex-direction: column;
-      gap: 6px;
-      padding: 14px 18px;
-      border-radius: 16px;
-      background: rgba(15, 23, 42, 0.78);
-      border: 1px solid rgba(148, 163, 184, 0.3);
-      box-shadow: 0 18px 28px -26px rgba(15, 23, 42, 1);
-      min-width: 160px;
-      pointer-events: none;
-    }
-
-    .marker-label {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      color: rgba(226, 232, 240, 0.72);
-    }
-
-    .marker-value {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
-
-    .marker[data-type="traffic"] {
-      flex-direction: row;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-    }
-
-    .marker[data-type="traffic"] .marker-label {
-      letter-spacing: 0.12em;
-    }
-
-    .marker[data-type="traffic"] .marker-value {
-      font-size: 28px;
-    }
-
-    .marker[data-type="traffic"]::before {
-      content: "";
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      border: 3px solid rgba(148, 163, 184, 0.4);
-      box-shadow: inset 0 0 0 4px currentColor;
-      color: #4ade80;
-      opacity: 0.9;
-    }
-
-    .marker[data-signal="success"]::before {
-      color: #4ade80;
-    }
-
-    .marker[data-signal="warning"]::before {
-      color: #facc15;
-    }
-
-    .marker[data-signal="danger"]::before {
-      color: #f87171;
-    }
-
-    .marker-config {
-      margin-top: 28px;
-      display: grid;
-      gap: 20px;
-    }
-
-    .marker-config h3 {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .marker-config p {
-      margin: 0;
-      color: var(--text-secondary);
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .marker-fields {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-
-    .marker-field {
-      background: rgba(15, 23, 42, 0.45);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 16px;
-      display: grid;
-      gap: 12px;
-    }
-
-    .marker-field h4 {
-      margin: 0;
-      font-size: 16px;
-      letter-spacing: -0.01em;
-    }
-
-    .marker-field label {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: rgba(226, 232, 240, 0.72);
-    }
-
-    .marker-field label span {
-      display: block;
-      margin-top: 6px;
-      font-size: 13px;
-      letter-spacing: 0;
-      text-transform: none;
+    .secondary-button {
+      background: transparent;
+      border: 1px solid rgba(99, 102, 241, 0.6);
       color: var(--text-primary);
+      box-shadow: none;
     }
 
-    .marker-field input[type="number"] {
-      margin-bottom: 4px;
+    .secondary-button:hover {
+      border-color: var(--accent);
+      box-shadow: none;
     }
 
-    .axis-output {
-      font-size: 12px;
-      color: var(--text-secondary);
-      display: inline-flex;
-      gap: 6px;
-      align-items: baseline;
+    .secondary-button:active {
+      transform: translateY(0);
     }
 
     .output {
@@ -356,33 +172,6 @@
       box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
     }
 
-    .marker-json {
-      min-height: 200px;
-    }
-
-    .secondary-button {
-      border: 1px solid rgba(99, 102, 241, 0.6);
-      background: transparent;
-      color: var(--text-primary);
-      padding: 12px 18px;
-      border-radius: 14px;
-      cursor: pointer;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      transition: border 0.2s ease, transform 0.2s ease;
-      width: 100%;
-      margin-top: 16px;
-    }
-
-    .secondary-button:hover {
-      border-color: var(--accent);
-      transform: translateY(-1px);
-    }
-
-    .secondary-button:active {
-      transform: translateY(0);
-    }
-
     .small-note {
       font-size: 13px;
       color: var(--text-secondary);
@@ -401,22 +190,12 @@
       color: #93c5fd;
     }
 
-    @media (min-width: 1080px) {
-      .form-and-canvas {
-        grid-template-columns: 1.05fr 0.95fr;
-        align-items: start;
-      }
-    }
-
     @media (max-width: 640px) {
       body {
         padding: 16px;
       }
       .wrapper {
         padding: 28px 22px;
-      }
-      .card-stage {
-        padding: 16px;
       }
     }
   </style>
@@ -425,10 +204,10 @@
   <div class="wrapper">
     <header>
       <h1>Настройка Crimean Bridge Bot</h1>
-      <p class="lead">Заполните форму один раз и нажмите кнопку. Мы сформируем команды для терминала, файл <code>.env</code> и параметры для Figma, чтобы вы могли запустить бота без ручного ввода значений.</p>
+      <p class="lead">Заполните форму один раз и нажмите кнопку. Мы сформируем команды для терминала и файл <code>.env</code>, чтобы вы могли запустить бота без ручного ввода значений.</p>
     </header>
 
-    <div class="form-and-canvas">
+    <section>
       <form id="config-form">
         <div>
           <label for="api-id">Telegram API ID</label>
@@ -519,176 +298,15 @@
             id="figma-layer-config"
             name="figmaLayerConfig"
             type="text"
-            placeholder="assets/figma_layers.sample.json"
+            placeholder="путь к JSON с конфигурацией слоёв"
           />
         </div>
-        <div class="full-width">
-          <label for="extra-notes">Дополнительные настройки (необязательно)</label>
-          <input id="extra-notes" name="extra" type="text" placeholder="Например, TELEGRAM_DESTINATION_CHAT можно пропустить" />
+        <div class="actions">
+          <button type="submit">Сформировать команды</button>
+          <button type="reset" class="secondary-button">Очистить</button>
         </div>
-        <button type="submit">Сгенерировать команды</button>
       </form>
-
-      <section class="canvas-section" aria-labelledby="canvas-title">
-        <h2 id="canvas-title">Холст карточки и маркеры элементов</h2>
-        <p>Используйте схему, чтобы определить координаты ключевых блоков на итоговом изображении. Настроенные точки помогут точнее автоматизировать размещение даты, времени, погоды и показателей загруженности.</p>
-
-        <div class="card-stage" id="card-stage">
-          <div class="card-background-hint" id="background-hint">Фон: не выбран</div>
-          <div class="card-safe-zone" aria-hidden="true"></div>
-          <div class="marker" data-marker-key="date" data-type="text">
-            <span class="marker-label">Дата</span>
-            <span class="marker-value" data-role="value">СР 08.10</span>
-          </div>
-          <div class="marker" data-marker-key="time" data-type="text">
-            <span class="marker-label">Время</span>
-            <span class="marker-value" data-role="value">15:00</span>
-          </div>
-          <div class="marker" data-marker-key="weather" data-type="text">
-            <span class="marker-label">Погода</span>
-            <span class="marker-value" data-role="value">+12° · Облачно</span>
-          </div>
-          <div class="marker" data-marker-key="crimea" data-type="traffic" data-signal="warning">
-            <span class="marker-label">В Крым</span>
-            <span class="marker-value" data-role="value">6</span>
-          </div>
-          <div class="marker" data-marker-key="kuban" data-type="traffic" data-signal="success">
-            <span class="marker-label">На Кубань</span>
-            <span class="marker-value" data-role="value">3</span>
-          </div>
-        </div>
-
-        <div class="marker-config">
-          <div>
-            <h3>Координаты и подписи</h3>
-            <p>Координаты задаются в пикселях относительно изображения 1436×1080. Настройте значения и сохраните конфигурацию для использования в пайплайне генерации карточки.</p>
-          </div>
-          <div class="marker-fields">
-            <div class="marker-field" data-marker="date">
-              <h4>Дата</h4>
-              <label>
-                Горизонталь (px)
-                <span>
-                  <input type="number" min="0" max="1436" step="1" value="186" data-axis="x" />
-                  <span class="axis-output" data-axis-output="x">13% по ширине</span>
-                </span>
-              </label>
-              <label>
-                Вертикаль (px)
-                <span>
-                  <input type="number" min="0" max="1080" step="1" value="128" data-axis="y" />
-                  <span class="axis-output" data-axis-output="y">12% по высоте</span>
-                </span>
-              </label>
-              <label>
-                Пример текста
-                <span>
-                  <input type="text" value="СР 08.10" data-prop="text" />
-                </span>
-              </label>
-            </div>
-            <div class="marker-field" data-marker="time">
-              <h4>Время</h4>
-              <label>
-                Горизонталь (px)
-                <span>
-                  <input type="number" min="0" max="1436" step="1" value="186" data-axis="x" />
-                  <span class="axis-output" data-axis-output="x">13% по ширине</span>
-                </span>
-              </label>
-              <label>
-                Вертикаль (px)
-                <span>
-                  <input type="number" min="0" max="1080" step="1" value="224" data-axis="y" />
-                  <span class="axis-output" data-axis-output="y">21% по высоте</span>
-                </span>
-              </label>
-              <label>
-                Пример текста
-                <span>
-                  <input type="text" value="15:00" data-prop="text" />
-                </span>
-              </label>
-            </div>
-            <div class="marker-field" data-marker="weather">
-              <h4>Погода</h4>
-              <label>
-                Горизонталь (px)
-                <span>
-                  <input type="number" min="0" max="1436" step="1" value="200" data-axis="x" />
-                  <span class="axis-output" data-axis-output="x">14% по ширине</span>
-                </span>
-              </label>
-              <label>
-                Вертикаль (px)
-                <span>
-                  <input type="number" min="0" max="1080" step="1" value="344" data-axis="y" />
-                  <span class="axis-output" data-axis-output="y">32% по высоте</span>
-                </span>
-              </label>
-              <label>
-                Пример текста
-                <span>
-                  <input type="text" value="+12° · Облачно" data-prop="text" />
-                </span>
-              </label>
-            </div>
-            <div class="marker-field" data-marker="crimea">
-              <h4>В Крым</h4>
-              <label>
-                Горизонталь (px)
-                <span>
-                  <input type="number" min="0" max="1436" step="1" value="1090" data-axis="x" />
-                  <span class="axis-output" data-axis-output="x">76% по ширине</span>
-                </span>
-              </label>
-              <label>
-                Вертикаль (px)
-                <span>
-                  <input type="number" min="0" max="1080" step="1" value="496" data-axis="y" />
-                  <span class="axis-output" data-axis-output="y">46% по высоте</span>
-                </span>
-              </label>
-              <label>
-                Значение (0–10)
-                <span>
-                  <input type="number" min="0" max="10" step="1" value="6" data-prop="score" />
-                </span>
-              </label>
-            </div>
-            <div class="marker-field" data-marker="kuban">
-              <h4>На Кубань</h4>
-              <label>
-                Горизонталь (px)
-                <span>
-                  <input type="number" min="0" max="1436" step="1" value="1090" data-axis="x" />
-                  <span class="axis-output" data-axis-output="x">76% по ширине</span>
-                </span>
-              </label>
-              <label>
-                Вертикаль (px)
-                <span>
-                  <input type="number" min="0" max="1080" step="1" value="656" data-axis="y" />
-                  <span class="axis-output" data-axis-output="y">61% по высоте</span>
-                </span>
-              </label>
-              <label>
-                Значение (0–10)
-                <span>
-                  <input type="number" min="0" max="10" step="1" value="3" data-prop="score" />
-                </span>
-              </label>
-            </div>
-          </div>
-          <article class="output-card">
-            <h2>Экспорт маркеров</h2>
-            <textarea id="marker-output" class="marker-json" readonly></textarea>
-            <button type="button" class="secondary-button" id="copy-markers">Скопировать JSON</button>
-            <p class="small-note">JSON содержит позиции и подписи элементов. Подключите файл к рендереру карточки и разместите блоки строго по координатам.</p>
-          </article>
-        </div>
-      </section>
-    </div>
+    </section>
 
     <section class="output" aria-live="polite">
       <article class="output-card">
@@ -712,148 +330,6 @@
     const form = document.getElementById('config-form');
     const shellOutput = document.getElementById('shell-output');
     const envOutput = document.getElementById('env-output');
-    const cardStage = document.getElementById('card-stage');
-    const backgroundInput = document.getElementById('background');
-    const backgroundHint = document.getElementById('background-hint');
-    const markerOutput = document.getElementById('marker-output');
-    const copyMarkersButton = document.getElementById('copy-markers');
-
-    const CARD_WIDTH = 1436;
-    const CARD_HEIGHT = 1080;
-
-    const markerState = {
-      date: { label: 'Дата', type: 'text', text: 'СР 08.10', x: 186, y: 128 },
-      time: { label: 'Время', type: 'text', text: '15:00', x: 186, y: 224 },
-      weather: { label: 'Погода', type: 'text', text: '+12° · Облачно', x: 200, y: 344 },
-      crimea: { label: 'В Крым', type: 'traffic', score: 6, x: 1090, y: 496 },
-      kuban: { label: 'На Кубань', type: 'traffic', score: 3, x: 1090, y: 656 }
-    };
-
-    const markerElements = {};
-    document.querySelectorAll('.marker[data-marker-key]').forEach((element) => {
-      markerElements[element.dataset.markerKey] = element;
-    });
-
-    function clamp(value, min, max) {
-      return Math.min(Math.max(value, min), max);
-    }
-
-    function trafficSignal(score) {
-      if (score <= 3) {
-        return 'success';
-      }
-      if (score <= 6) {
-        return 'warning';
-      }
-      return 'danger';
-    }
-
-    function updateMarkerElement(key) {
-      const state = markerState[key];
-      const element = markerElements[key];
-      if (!state || !element) {
-        return;
-      }
-
-      const topPercent = (state.y / CARD_HEIGHT) * 100;
-      const leftPercent = (state.x / CARD_WIDTH) * 100;
-      element.style.top = `${topPercent}%`;
-      element.style.left = `${leftPercent}%`;
-
-      const valueNode = element.querySelector('[data-role="value"]');
-      if (state.type === 'text') {
-        valueNode.textContent = state.text;
-      } else {
-        valueNode.textContent = state.score;
-        element.dataset.signal = trafficSignal(state.score);
-      }
-    }
-
-    function updateAxisOutput(field, axis, value) {
-      const output = field.querySelector(`[data-axis-output="${axis}"]`);
-      if (!output) {
-        return;
-      }
-      const dimension = axis === 'x' ? CARD_WIDTH : CARD_HEIGHT;
-      const percent = Math.round((value / dimension) * 100);
-      output.textContent = `${percent}% по ${axis === 'x' ? 'ширине' : 'высоте'}`;
-    }
-
-    function refreshMarkerExport() {
-      const payload = {};
-      Object.entries(markerState).forEach(([key, state]) => {
-        if (state.type === 'text') {
-          payload[key] = {
-            label: state.label,
-            type: state.type,
-            text: state.text,
-            x: Math.round(state.x),
-            y: Math.round(state.y)
-          };
-        } else {
-          payload[key] = {
-            label: state.label,
-            type: state.type,
-            score: state.score,
-            signal: trafficSignal(state.score),
-            x: Math.round(state.x),
-            y: Math.round(state.y)
-          };
-        }
-      });
-      markerOutput.value = JSON.stringify(payload, null, 2);
-    }
-
-    function initializeMarkerControls() {
-      document.querySelectorAll('.marker-field').forEach((field) => {
-        const key = field.dataset.marker;
-        const state = markerState[key];
-        if (!state) {
-          return;
-        }
-
-        field.querySelectorAll('input[data-axis]').forEach((input) => {
-          const axis = input.dataset.axis;
-          const dimension = axis === 'x' ? CARD_WIDTH : CARD_HEIGHT;
-          input.value = state[axis];
-          updateAxisOutput(field, axis, state[axis]);
-          input.addEventListener('input', () => {
-            const numeric = clamp(Number(input.value), 0, dimension);
-            state[axis] = numeric;
-            input.value = numeric;
-            updateAxisOutput(field, axis, numeric);
-            updateMarkerElement(key);
-            refreshMarkerExport();
-          });
-        });
-
-        field.querySelectorAll('input[data-prop="text"]').forEach((input) => {
-          input.value = state.text;
-          input.addEventListener('input', () => {
-            state.text = input.value;
-            updateMarkerElement(key);
-            refreshMarkerExport();
-          });
-        });
-
-        field.querySelectorAll('input[data-prop="score"]').forEach((input) => {
-          input.value = state.score;
-          input.addEventListener('input', () => {
-            const numeric = clamp(Number(input.value), 0, 10);
-            state.score = numeric;
-            input.value = numeric;
-            updateMarkerElement(key);
-            refreshMarkerExport();
-          });
-        });
-      });
-    }
-
-    function initializeMarkers() {
-      Object.keys(markerState).forEach((key) => updateMarkerElement(key));
-      refreshMarkerExport();
-      initializeMarkerControls();
-    }
 
     function sanitize(value) {
       return typeof value === 'string' ? value.trim() : '';
@@ -952,33 +428,10 @@
       envOutput.value = envLines.join('\n');
     });
 
-    if (backgroundInput) {
-      backgroundInput.addEventListener('input', () => {
-        const value = backgroundInput.value.trim();
-        if (value) {
-          backgroundHint.textContent = `Фон: ${value}`;
-        } else {
-          backgroundHint.textContent = 'Фон: не выбран';
-        }
-      });
-    }
-
-    if (copyMarkersButton) {
-      copyMarkersButton.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(markerOutput.value);
-          const originalText = copyMarkersButton.textContent;
-          copyMarkersButton.textContent = 'Скопировано!';
-          setTimeout(() => {
-            copyMarkersButton.textContent = originalText;
-          }, 1600);
-        } catch (error) {
-          alert('Не удалось скопировать JSON автоматически, скопируйте текст вручную.');
-        }
-      });
-    }
-
-    initializeMarkers();
+    form.addEventListener('reset', () => {
+      shellOutput.value = '';
+      envOutput.value = '';
+    });
   </script>
 </body>
 </html>
