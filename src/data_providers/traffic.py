@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 import re
+import xml.etree.ElementTree as ET
 from typing import Iterable, Optional
 
 import requests
@@ -20,8 +21,8 @@ class DirectionConfig:
 
 @dataclass(frozen=True)
 class TrafficConfig:
-    api_key: str
     directions: Iterable[DirectionConfig]
+    api_key: Optional[str] = None
     timeout: int = 10
 
 
@@ -29,9 +30,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 class YandexTrafficClient:
-    """Fetch traffic information (jam scores) from the Yandex Maps API."""
+    """Fetch traffic information (jam scores) from public Yandex sources."""
 
     BASE_URL = "https://api-maps.yandex.ru/services/traffic-info/2.1/"
+    REGINFO_URL = "https://export.yandex.ru/bar/reginfo.xml"
     FALLBACK_URL = "https://yandex.ru/maps/traffic/"
 
     def __init__(self, config: TrafficConfig):
@@ -46,13 +48,30 @@ class YandexTrafficClient:
 
     def _fetch_direction_score(self, direction: DirectionConfig) -> int:
         try:
-            return self._fetch_direction_score_via_api(direction)
-        except Exception as exc:  # pragma: no cover - fallback path depends on network
+            return self._fetch_direction_score_via_reginfo(direction)
+        except Exception as reg_exc:  # pragma: no cover - network dependent
             LOGGER.warning(
-                "Не удалось получить пробки через API Яндекса для направления %s: %s. Перехожу к парсингу сайта.",
+                (
+                    "Не удалось получить данные пробок через открытый сервис Яндекса для направления %s: %s. "
+                    "Пробую другие источники."
+                ),
                 direction.name,
-                exc,
+                reg_exc,
             )
+
+        if self.config.api_key:
+            try:
+                return self._fetch_direction_score_via_api(direction)
+            except Exception as exc:  # pragma: no cover - fallback path depends on network
+                LOGGER.warning(
+                    (
+                        "Не удалось получить пробки через API Яндекса для направления %s: %s. "
+                        "Перехожу к парсингу сайта."
+                    ),
+                    direction.name,
+                    exc,
+                )
+
         try:
             return self._fetch_direction_score_via_scraper(direction)
         except Exception as fallback_exc:  # pragma: no cover - network dependent
@@ -66,6 +85,37 @@ class YandexTrafficClient:
             )
             LOGGER.debug("Ошибка парсинга сайта Яндекса", exc_info=fallback_exc)
             return 0
+
+    def _fetch_direction_score_via_reginfo(self, direction: DirectionConfig) -> int:
+        params = {"lat": direction.latitude, "lon": direction.longitude}
+        response = requests.get(self.REGINFO_URL, params=params, timeout=self.config.timeout)
+        response.raise_for_status()
+
+        text = response.text
+
+        try:
+            tree = ET.fromstring(response.content)
+        except ET.ParseError:
+            tree = None
+
+        if tree is not None:
+            level = self._extract_score_from_tree(tree)
+            if level is not None:
+                score = _clamp_score(level)
+                LOGGER.info(
+                    "Получил данные пробок через открытый сервис Яндекса для направления %s: %s баллов",
+                    direction.name,
+                    score,
+                )
+                return score
+
+        score = _clamp_score(self._extract_score_from_reginfo_text(text))
+        LOGGER.info(
+            "Получил данные пробок через открытый сервис Яндекса для направления %s: %s баллов",
+            direction.name,
+            score,
+        )
+        return score
 
     def _fetch_direction_score_via_api(self, direction: DirectionConfig) -> int:
         params = {
@@ -109,6 +159,37 @@ class YandexTrafficClient:
             score,
         )
         return _clamp_score(score)
+
+    @staticmethod
+    def _extract_score_from_tree(tree: ET.Element) -> Optional[int]:
+        candidates: list[int] = []
+        tags_of_interest = {"level", "rate", "value", "points", "ball", "score"}
+
+        for element in tree.iter():
+            if element.tag.lower() in tags_of_interest:
+                text = (element.text or "").strip()
+                if text.isdigit():
+                    candidates.append(int(text))
+
+        if candidates:
+            return candidates[0]
+        return None
+
+    @staticmethod
+    def _extract_score_from_reginfo_text(text: str) -> int:
+        patterns = [
+            r"<level[^>]*>([0-9]+)</level>",
+            r"<rate[^>]*>([0-9]+)</rate>",
+            r"<value[^>]*>([0-9]+)</value>",
+            r"<points[^>]*>([0-9]+)</points>",
+            r"<ball[^>]*>([0-9]+)</ball>",
+            r"([0-9]+)\s*балл",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text, flags=re.IGNORECASE)
+            if match:
+                return int(match.group(1))
+        raise ValueError("Не удалось определить баллы пробок в открытом ответе Яндекса")
 
     @staticmethod
     def _extract_score(payload: dict) -> int:

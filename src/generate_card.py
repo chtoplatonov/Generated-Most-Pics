@@ -59,12 +59,9 @@ def build_card_data(
     scores = []
     if traffic_client is None:
         api_key = os.environ.get("YANDEX_TRAFFIC_API_KEY")
-        if api_key:
-            traffic_client = YandexTrafficClient(TrafficConfig(api_key=api_key, directions=DEFAULT_DIRECTIONS))
-        else:
-            LOGGER.warning(
-                "Traffic key not provided; traffic data will be skipped and default scores will be used."
-            )
+        traffic_client = YandexTrafficClient(
+            TrafficConfig(directions=DEFAULT_DIRECTIONS, api_key=api_key or None)
+        )
 
     if traffic_client is not None:
         try:
@@ -230,10 +227,11 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     weather_client = WeatherClient()
 
-    traffic_client: YandexTrafficClient | None = None
-    traffic_key = args.traffic_key or os.environ.get("YANDEX_TRAFFIC_API_KEY")
-    if traffic_key:
-        traffic_client = YandexTrafficClient(TrafficConfig(api_key=traffic_key, directions=DEFAULT_DIRECTIONS))
+    traffic_key_raw = args.traffic_key or os.environ.get("YANDEX_TRAFFIC_API_KEY")
+    cleaned_traffic_key = traffic_key_raw.strip() if traffic_key_raw and traffic_key_raw.strip() else None
+    traffic_client = YandexTrafficClient(
+        TrafficConfig(directions=DEFAULT_DIRECTIONS, api_key=cleaned_traffic_key)
+    )
 
     card_data = build_card_data(
         message_text,

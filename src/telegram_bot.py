@@ -45,20 +45,15 @@ class BridgeCardBot:
         self.weather_client = WeatherClient()
         self.figma_renderer = FigmaCardRenderer.from_env()
 
-        traffic_key = os.environ.get("YANDEX_TRAFFIC_API_KEY")
+        raw_traffic_key = os.environ.get("YANDEX_TRAFFIC_API_KEY")
+        cleaned_traffic_key = raw_traffic_key.strip() if raw_traffic_key and raw_traffic_key.strip() else None
         directions = (
             DirectionConfig(name="в Крым", longitude=36.5134, latitude=45.3612, radius=2500),
             DirectionConfig(name="на Кубань", longitude=36.5165, latitude=45.3013, radius=2500),
         )
-        if traffic_key:
-            self.traffic_client: YandexTrafficClient | None = YandexTrafficClient(
-                TrafficConfig(api_key=traffic_key, directions=directions)
-            )
-        else:
-            LOGGER.warning(
-                "YANDEX_TRAFFIC_API_KEY не задан. Используем значение 0 баллов для обеих сторон моста."
-            )
-            self.traffic_client = None
+        self.traffic_client = YandexTrafficClient(
+            TrafficConfig(directions=directions, api_key=cleaned_traffic_key)
+        )
 
         session_dir = Path(__file__).resolve().parent.parent / ".telegram_session"
         try:
