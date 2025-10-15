@@ -7,7 +7,9 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional
 
-from pyrogram import Client, filters
+from urllib.parse import urlparse
+
+from pyrogram import Client, filters, idle
 from pyrogram.handlers import MessageHandler
 from pyrogram.types import Message
 
@@ -59,6 +61,8 @@ class BridgeCardBot:
                 "Не удалось подготовить папку для сессии Telegram. Проверьте права доступа и путь к проекту."
             ) from exc
 
+        message_filter = filters.chat(self.source_chat) & filters.incoming
+
         self.client = Client(
             session_name,
             api_id=api_id,
@@ -66,17 +70,18 @@ class BridgeCardBot:
             bot_token=bot_token,
             workdir=str(session_dir),
         )
-        self.client.add_handler(MessageHandler(self._on_message, filters.chat(self.source_chat)))
+        self.client.add_handler(MessageHandler(self._on_message, message_filter))
 
     async def _on_message(self, client: Client, message: Message) -> None:
-        if not message.text:
-            LOGGER.debug("Ignoring message without text: %s", message.id)
+        message_text = (message.text or message.caption or "").strip()
+        if not message_text:
+            LOGGER.debug("Ignoring message without readable text: %s", message.id)
             return
 
         LOGGER.info("Processing message %s", message.id)
         try:
             card_data = build_card_data(
-                message.text,
+                message_text,
                 background=self.background,
                 weather_client=self.weather_client,
                 traffic_client=self.traffic_client,
@@ -100,9 +105,35 @@ class BridgeCardBot:
         LOGGER.info("Card published for message %s", message.id)
 
     async def run(self) -> None:
-        async with self.client:
-            LOGGER.info("BridgeCardBot is running. Listening on %s", self.source_chat)
-            await asyncio.Future()
+        await self.client.start()
+        try:
+            await self._log_chat_context()
+            await idle()
+        finally:
+            LOGGER.info("Остановка BridgeCardBot")
+            await self.client.stop()
+            LOGGER.info("BridgeCardBot остановлен")
+
+    async def _log_chat_context(self) -> None:
+        source_label = await self._describe_chat(self.source_chat)
+        destination_label = await self._describe_chat(self.destination_chat)
+        if self.destination_thread_id is not None:
+            destination_label = f"{destination_label} (thread {self.destination_thread_id})"
+        LOGGER.info(
+            "BridgeCardBot is running. Listening on %s and posting to %s",
+            source_label,
+            destination_label,
+        )
+
+    async def _describe_chat(self, chat_ref: str | int) -> str:
+        try:
+            chat = await self.client.get_chat(chat_ref)
+        except Exception as exc:  # noqa: BLE001 - хотим оставить исходное значение для диагностики
+            LOGGER.warning("Не удалось получить данные чата %s: %s", chat_ref, exc)
+            return str(chat_ref)
+
+        title = chat.title or chat.first_name or chat.username or str(chat.id)
+        return f"{title} (id {chat.id})"
 
 
 def run_bot_from_env() -> None:
@@ -149,13 +180,52 @@ def run_bot_from_env() -> None:
 
     api_hash = _require_env("TELEGRAM_API_HASH")
     bot_token = _require_env("TELEGRAM_BOT_TOKEN")
+
+    def _normalise_chat_reference(raw_value: str) -> str | int:
+        cleaned = raw_value.strip()
+        if not cleaned:
+            raise ValueError("Empty chat reference")
+
+        lower_cleaned = cleaned.lower()
+        if lower_cleaned.startswith(("http://", "https://")):
+            parsed = urlparse(cleaned)
+            candidate = parsed.path.lstrip("/")
+            if candidate:
+                cleaned = candidate
+        elif lower_cleaned.startswith("t.me/"):
+            cleaned = cleaned.split("/", 1)[-1]
+
+        cleaned = cleaned.split("?", 1)[0]
+        cleaned = cleaned.split("/", 1)[0]
+        cleaned = cleaned.lstrip("@")
+
+        if cleaned.lstrip("-").isdigit():
+            return int(cleaned)
+        return cleaned
+
     source_chat_raw = os.environ.get("TELEGRAM_SOURCE_CHAT")
-    source_chat = source_chat_raw.strip() if source_chat_raw else None
-    if not source_chat:
+    source_chat_value = source_chat_raw.strip() if source_chat_raw else None
+    if not source_chat_value:
         raise RuntimeError("Нужно указать TELEGRAM_SOURCE_CHAT — канал, где бот читает сообщения.")
+    try:
+        source_chat = _normalise_chat_reference(source_chat_value)
+    except ValueError as exc:  # noqa: BLE001 - подсказываем пользователю
+        raise RuntimeError("TELEGRAM_SOURCE_CHAT заполнен некорректно. Укажите @username, ID или ссылку t.me.") from exc
 
     destination_chat_raw = os.environ.get("TELEGRAM_DESTINATION_CHAT")
-    destination_chat = destination_chat_raw.strip() if destination_chat_raw else source_chat
+    if destination_chat_raw:
+        destination_chat_value = destination_chat_raw.strip()
+        if destination_chat_value:
+            try:
+                destination_chat = _normalise_chat_reference(destination_chat_value)
+            except ValueError as exc:  # noqa: BLE001
+                raise RuntimeError(
+                    "TELEGRAM_DESTINATION_CHAT заполнен некорректно. Укажите @username, ID или ссылку t.me."
+                ) from exc
+        else:
+            destination_chat = source_chat
+    else:
+        destination_chat = source_chat
     destination_thread_id_raw = os.environ.get("TELEGRAM_DESTINATION_THREAD_ID")
     if destination_thread_id_raw:
         cleaned_thread_id = destination_thread_id_raw.strip()
@@ -182,7 +252,10 @@ def run_bot_from_env() -> None:
         destination_thread_id=destination_thread_id,
         background=background,
     )
-    asyncio.run(bot.run())
+    try:
+        asyncio.run(bot.run())
+    except KeyboardInterrupt:
+        LOGGER.info("Остановка по запросу пользователя")
 
 
 __all__ = ["BridgeCardBot", "run_bot_from_env"]

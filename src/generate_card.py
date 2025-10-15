@@ -76,8 +76,25 @@ def generate_card_image(
 
 def _read_message(path: str | os.PathLike[str] | None) -> str:
     if path is None or str(path) == "-":
-        return os.sys.stdin.read()
-    return Path(path).read_text(encoding="utf-8")
+        text = os.sys.stdin.read()
+        if not text.strip():
+            raise RuntimeError(
+                "Текст сообщения не передан. Укажите файл через --message или вставьте текст в стандартный ввод."
+            )
+        return text
+
+    file_path = Path(path)
+    try:
+        text = file_path.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise RuntimeError(
+            f"Файл с сообщением {file_path} не найден. Проверьте путь или укажите '-' для ввода из терминала."
+        ) from exc
+
+    if not text.strip():
+        raise RuntimeError(f"Файл {file_path} пуст. Добавьте текст сообщения о мосте.")
+
+    return text
 
 
 def main(argv: Optional[list[str]] = None) -> None:
@@ -101,7 +118,11 @@ def main(argv: Optional[list[str]] = None) -> None:
     args = parser.parse_args(argv)
     logging.basicConfig(level=getattr(logging, args.log_level.upper(), logging.INFO))
 
-    message_text = _read_message(args.message)
+    try:
+        message_text = _read_message(args.message)
+    except RuntimeError as exc:
+        LOGGER.error("%s", exc)
+        raise SystemExit(1) from exc
 
     weather_client = WeatherClient()
 
