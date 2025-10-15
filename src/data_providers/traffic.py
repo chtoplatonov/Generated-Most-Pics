@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
+import re
 from typing import Iterable, Optional
 
 import requests
@@ -23,10 +25,14 @@ class TrafficConfig:
     timeout: int = 10
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 class YandexTrafficClient:
     """Fetch traffic information (jam scores) from the Yandex Maps API."""
 
     BASE_URL = "https://api-maps.yandex.ru/services/traffic-info/2.1/"
+    FALLBACK_URL = "https://yandex.ru/maps/traffic/"
 
     def __init__(self, config: TrafficConfig):
         self.config = config
@@ -39,6 +45,23 @@ class YandexTrafficClient:
         return scores
 
     def _fetch_direction_score(self, direction: DirectionConfig) -> int:
+        try:
+            return self._fetch_direction_score_via_api(direction)
+        except Exception as exc:  # pragma: no cover - fallback path depends on network
+            LOGGER.warning(
+                "Не удалось получить пробки через API Яндекса для направления %s: %s. Перехожу к парсингу сайта.",
+                direction.name,
+                exc,
+            )
+            try:
+                return self._fetch_direction_score_via_scraper(direction)
+            except Exception as fallback_exc:  # pragma: no cover - network dependent
+                raise RuntimeError(
+                    "Не удалось получить данные пробок из API и сайта Яндекса для направления "
+                    f"{direction.name}"
+                ) from fallback_exc
+
+    def _fetch_direction_score_via_api(self, direction: DirectionConfig) -> int:
         params = {
             "format": "json",
             "lang": "ru_RU",
@@ -49,17 +72,36 @@ class YandexTrafficClient:
             "apikey": self.config.api_key,
         }
         response = requests.get(self.BASE_URL, params=params, timeout=self.config.timeout)
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as exc:
-            status = exc.response.status_code if exc.response is not None else None
-            if status == 404:
-                raise ValueError(
-                    "Yandex Traffic API вернул 404. Проверьте, что ключ активирован и поддерживает сервис пробок."
-                ) from exc
-            raise
+        response.raise_for_status()
         payload = response.json()
         score = self._extract_score(payload)
+        return _clamp_score(score)
+
+    def _fetch_direction_score_via_scraper(self, direction: DirectionConfig) -> int:
+        params = {
+            "ll": f"{direction.longitude},{direction.latitude}",
+            "z": 12,
+        }
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0 Safari/537.36"
+            )
+        }
+        response = requests.get(
+            self.FALLBACK_URL,
+            params=params,
+            headers=headers,
+            timeout=self.config.timeout,
+        )
+        response.raise_for_status()
+        score = self._extract_score_from_html(response.text)
+        LOGGER.info(
+            "Получил данные пробок с сайта Яндекса для направления %s: %s баллов",
+            direction.name,
+            score,
+        )
         return _clamp_score(score)
 
     @staticmethod
@@ -109,6 +151,19 @@ class YandexTrafficClient:
                 stack.extend(current)
 
         raise ValueError("Unable to determine traffic score from response")
+
+    @staticmethod
+    def _extract_score_from_html(html: str) -> int:
+        patterns = [
+            r"([0-9]+)\s*балл",
+            r'"traffic(?:Level|Score|Rating)"\s*:\s*([0-9]+)',
+            r'"jamLevel"\s*:\s*([0-9]+)',
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, html, flags=re.IGNORECASE)
+            if match:
+                return int(match.group(1))
+        raise ValueError("Не удалось определить баллы пробок на странице Яндекса")
 
 
 def _clamp_score(value: int) -> int:
