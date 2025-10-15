@@ -93,6 +93,7 @@ class _NodeInfo:
     full_path: tuple[str, ...]
     normalized_name: str
     normalized_path: str
+    tokens: set[str]
 
     def path_string(self) -> str:
         return "/".join(self.full_path)
@@ -118,6 +119,25 @@ class _AliasInfo:
             if all(token in node.normalized_path for token in self.tokens):
                 return True
         return False
+
+    def similarity(self, node: _NodeInfo) -> float:
+        """Return a soft similarity score for the given node."""
+
+        score = 0.0
+        if node.normalized_name in self.aliases:
+            score = max(score, 1.0)
+        if node.normalized_path in self.aliases:
+            score = max(score, 0.95)
+        for alias in self.aliases:
+            if alias and alias in node.normalized_path:
+                score = max(score, min(0.9, 0.4 + len(alias) / max(len(node.normalized_path), 1)))
+        if self.tokens:
+            overlap = len(self.tokens & node.tokens)
+            if overlap:
+                score = max(score, overlap / len(self.tokens))
+        if self.preferred_type and node.type and node.type.upper() != self.preferred_type.upper():
+            score *= 0.6
+        return score
 
 
 DEFAULT_LAYER_ALIASES: Dict[str, list[str]] = {
@@ -369,10 +389,51 @@ class FigmaCardRenderer:
                         lookup[desired_name] = node_id
         still_missing = [name for name, node_id in lookup.items() if node_id is None]
         if still_missing:
+            guesses = self._guess_nodes(alias_map, nodes, lookup)
+            for desired_name, node_id in guesses.items():
+                if lookup[desired_name] is None and node_id:
+                    lookup[desired_name] = node_id
+        unresolved = [name for name, node_id in lookup.items() if node_id is None]
+        if unresolved:
+            available_examples = ", ".join(sorted(node.name for node in nodes[:20]))
             raise RuntimeError(
-                "Не удалось найти слои в макете Figma: " + ", ".join(sorted(still_missing))
+                "Не удалось найти слои в макете Figma: "
+                + ", ".join(sorted(unresolved))
+                + ". Проверьте FIGMA_LAYER_CONFIG или задайте псевдонимы."
+                + (f" Доступные примеры: {available_examples}" if available_examples else "")
             )
         return lookup
+
+    def _guess_nodes(
+        self,
+        alias_map: Mapping[str, _AliasInfo],
+        nodes: Sequence[_NodeInfo],
+        current_lookup: Mapping[str, str | None],
+    ) -> Dict[str, str | None]:
+        used_ids = {node_id for node_id in current_lookup.values() if node_id}
+        guesses: Dict[str, str | None] = {name: None for name in alias_map}
+        for desired_name, alias_info in alias_map.items():
+            if current_lookup.get(desired_name):
+                continue
+            best_score = 0.0
+            best_node: _NodeInfo | None = None
+            for node in nodes:
+                if node.node_id in used_ids:
+                    continue
+                score = alias_info.similarity(node)
+                if score > best_score:
+                    best_score = score
+                    best_node = node
+            if best_node and best_score >= 0.35:
+                LOGGER.info(
+                    "Псевдоним %s сопоставлен со слоем %s (оценка %.2f)",
+                    desired_name,
+                    best_node.path_string(),
+                    best_score,
+                )
+                guesses[desired_name] = best_node.node_id
+                used_ids.add(best_node.node_id)
+        return guesses
 
     def _ensure_frame_nodes(self) -> list[_NodeInfo]:
         if self._frame_nodes_cache is None:
@@ -395,6 +456,7 @@ class FigmaCardRenderer:
             type_value = node_type if isinstance(node_type, str) else None
             normalized_name = _normalise_text(name)
             normalized_path = _normalise_text("/".join(next_path)) if next_path else normalized_name
+            tokens = _tokenise(" ".join(next_path)) | _tokenise(name)
             yield _NodeInfo(
                 node_id=node_id,
                 name=name,
@@ -402,6 +464,7 @@ class FigmaCardRenderer:
                 full_path=next_path,
                 normalized_name=normalized_name,
                 normalized_path=normalized_path,
+                tokens=tokens,
             )
         children = node.get("children")
         if isinstance(children, Sequence):
