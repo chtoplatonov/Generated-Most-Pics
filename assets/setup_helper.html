@@ -250,10 +250,6 @@
           <input id="yandex-key" name="yandexKey" type="text" placeholder="AIza... или другой ключ" required />
         </div>
         <div>
-          <label for="background">Фон карточки (путь)</label>
-          <input id="background" name="background" type="text" placeholder="/home/user/background.jpg" />
-        </div>
-        <div>
           <label for="figma-token">Figma Personal Access Token</label>
           <input
             id="figma-token"
@@ -346,7 +342,6 @@
       const destinationChat = sanitize(data.get('destinationChat'));
       const destinationThread = sanitize(data.get('destinationThread'));
       const yandexKey = sanitize(data.get('yandexKey'));
-      const background = sanitize(data.get('background'));
       const figmaToken = sanitize(data.get('figmaToken'));
       const figmaFileKey = sanitize(data.get('figmaFileKey'));
       const figmaCardNodeId = sanitize(data.get('figmaCardNodeId'));
@@ -374,10 +369,6 @@
       }
 
       shellLines.push(`export YANDEX_TRAFFIC_API_KEY="${yandexKey}"`);
-
-      if (background) {
-        shellLines.push(`export CARD_BACKGROUND="${background}"`);
-      }
 
       shellLines.push(`export FIGMA_TOKEN="${figmaToken}"`);
       shellLines.push(`export FIGMA_FILE_KEY="${figmaFileKey}"`);
@@ -407,10 +398,6 @@
       }
 
       envLines.push(`YANDEX_TRAFFIC_API_KEY=${yandexKey}`);
-
-      if (background) {
-        envLines.push(`CARD_BACKGROUND=${background}`);
-      }
 
       envLines.push(`FIGMA_TOKEN=${figmaToken}`);
       envLines.push(`FIGMA_FILE_KEY=${figmaFileKey}`);
