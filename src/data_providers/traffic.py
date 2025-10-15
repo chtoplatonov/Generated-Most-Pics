@@ -53,13 +53,19 @@ class YandexTrafficClient:
                 direction.name,
                 exc,
             )
-            try:
-                return self._fetch_direction_score_via_scraper(direction)
-            except Exception as fallback_exc:  # pragma: no cover - network dependent
-                raise RuntimeError(
-                    "Не удалось получить данные пробок из API и сайта Яндекса для направления "
-                    f"{direction.name}"
-                ) from fallback_exc
+        try:
+            return self._fetch_direction_score_via_scraper(direction)
+        except Exception as fallback_exc:  # pragma: no cover - network dependent
+            LOGGER.warning(
+                (
+                    "Не удалось получить данные пробок с сайта Яндекса для направления %s: %s. "
+                    "Возвращаю значение 0."
+                ),
+                direction.name,
+                fallback_exc,
+            )
+            LOGGER.debug("Ошибка парсинга сайта Яндекса", exc_info=fallback_exc)
+            return 0
 
     def _fetch_direction_score_via_api(self, direction: DirectionConfig) -> int:
         params = {
