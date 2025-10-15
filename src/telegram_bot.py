@@ -99,17 +99,48 @@ class BridgeCardBot:
 
 def run_bot_from_env() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-    api_id = int(os.environ["TELEGRAM_API_ID"])
-    api_hash = os.environ["TELEGRAM_API_HASH"]
-    bot_token = os.environ["TELEGRAM_BOT_TOKEN"]
-    source_chat = os.environ.get("TELEGRAM_SOURCE_CHAT")
-    destination_chat = os.environ.get("TELEGRAM_DESTINATION_CHAT", source_chat)
-    destination_thread_id_raw = os.environ.get("TELEGRAM_DESTINATION_THREAD_ID")
-    destination_thread_id = int(destination_thread_id_raw) if destination_thread_id_raw else None
-    background = os.environ.get("CARD_BACKGROUND")
 
+    def _require_env(name: str) -> str:
+        value = os.environ.get(name)
+        if value:
+            cleaned = value.strip()
+            if cleaned:
+                return cleaned
+        raise RuntimeError(
+            f"Не найдено значение переменной окружения {name}. Заполните её через .env или экспорт и повторите запуск."
+        )
+
+    api_id_raw = _require_env("TELEGRAM_API_ID")
+    try:
+        api_id = int(api_id_raw)
+    except ValueError as exc:  # noqa: BLE001 - сразу подсказываем корректный формат
+        raise RuntimeError("TELEGRAM_API_ID должно быть целым числом, как выдали на my.telegram.org") from exc
+
+    api_hash = _require_env("TELEGRAM_API_HASH")
+    bot_token = _require_env("TELEGRAM_BOT_TOKEN")
+    source_chat_raw = os.environ.get("TELEGRAM_SOURCE_CHAT")
+    source_chat = source_chat_raw.strip() if source_chat_raw else None
     if not source_chat:
-        raise RuntimeError("TELEGRAM_SOURCE_CHAT environment variable is required")
+        raise RuntimeError("Нужно указать TELEGRAM_SOURCE_CHAT — канал, где бот читает сообщения.")
+
+    destination_chat_raw = os.environ.get("TELEGRAM_DESTINATION_CHAT")
+    destination_chat = destination_chat_raw.strip() if destination_chat_raw else source_chat
+    destination_thread_id_raw = os.environ.get("TELEGRAM_DESTINATION_THREAD_ID")
+    if destination_thread_id_raw:
+        cleaned_thread_id = destination_thread_id_raw.strip()
+        if not cleaned_thread_id:
+            destination_thread_id = None
+        else:
+            try:
+                destination_thread_id = int(cleaned_thread_id)
+            except ValueError as exc:  # noqa: BLE001 - объясняем корректный формат
+                raise RuntimeError(
+                    "TELEGRAM_DESTINATION_THREAD_ID должно быть числом — используйте ID ветки из Telegram."
+                ) from exc
+    else:
+        destination_thread_id = None
+    background_raw = os.environ.get("CARD_BACKGROUND")
+    background = background_raw.strip() if background_raw else None
 
     bot = BridgeCardBot(
         api_id=api_id,
