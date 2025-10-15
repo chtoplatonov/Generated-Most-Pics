@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Настройка Crimean Bridge Bot</title>
+  <style>
+    :root {
+      color-scheme: dark light;
+      --bg: radial-gradient(circle at top, #101828 0%, #0b0f1a 40%, #05060b 100%);
+      --card-bg: rgba(255, 255, 255, 0.08);
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5f5;
+      --accent: #4f46e5;
+      --accent-strong: #a855f7;
+      --border: rgba(255, 255, 255, 0.12);
+      --shadow: 0 18px 45px -20px rgba(15, 23, 42, 0.8);
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      color: var(--text-primary);
+    }
+
+    .wrapper {
+      width: min(920px, 100%);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(15, 23, 42, 0.7));
+      border-radius: 32px;
+      padding: 40px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: clamp(28px, 3vw, 42px);
+      letter-spacing: -0.02em;
+    }
+
+    p.lead {
+      margin-top: 8px;
+      margin-bottom: 28px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      letter-spacing: 0.01em;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.35);
+      color: inherit;
+      font-size: 15px;
+      transition: border 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    button {
+      grid-column: 1 / -1;
+      padding: 18px;
+      border-radius: 16px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px -18px rgba(168, 85, 247, 0.9);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .output {
+      margin-top: 36px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .output-card {
+      padding: 24px;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 30px -22px rgba(15, 23, 42, 0.9);
+    }
+
+    .output-card h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 160px;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.35);
+      color: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+    }
+
+    .small-note {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    a {
+      color: #93c5fd;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 16px;
+      }
+      .wrapper {
+        padding: 28px 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header>
+      <h1>Настройка Crimean Bridge Bot</h1>
+      <p class="lead">Заполните форму один раз и нажмите кнопку. Мы сформируем команды для терминала и файл <code>.env</code>, чтобы вы могли запустить бота без ручного ввода значений.</p>
+    </header>
+
+    <form id="config-form">
+      <div>
+        <label for="api-id">Telegram API ID</label>
+        <input id="api-id" name="apiId" type="number" placeholder="Например, 123456" required />
+      </div>
+      <div>
+        <label for="api-hash">Telegram API Hash</label>
+        <input id="api-hash" name="apiHash" type="text" placeholder="40-символьная строка" required />
+      </div>
+      <div>
+        <label for="bot-token">Токен Telegram-бота</label>
+        <input id="bot-token" name="botToken" type="text" placeholder="123456:ABC-DEF..." required />
+      </div>
+      <div>
+        <label for="source-chat">Канал-источник</label>
+        <input id="source-chat" name="sourceChat" type="text" placeholder="@source_channel или -100123456" required />
+      </div>
+      <div>
+        <label for="destination-chat">Канал для публикации</label>
+        <input id="destination-chat" name="destinationChat" type="text" placeholder="@target_channel (можно оставить пустым)" />
+      </div>
+      <div>
+        <label for="yandex-key">Ключ Яндекс.Трафика</label>
+        <input id="yandex-key" name="yandexKey" type="text" placeholder="AIza... или другой ключ" required />
+      </div>
+      <div>
+        <label for="background">Фон карточки (путь)</label>
+        <input id="background" name="background" type="text" placeholder="/home/user/background.jpg" />
+      </div>
+      <div class="full-width">
+        <label for="extra-notes">Дополнительные настройки (необязательно)</label>
+        <input id="extra-notes" name="extra" type="text" placeholder="Например, TELEGRAM_DESTINATION_CHAT можно пропустить" />
+      </div>
+      <button type="submit">Сгенерировать команды</button>
+    </form>
+
+    <section class="output" aria-live="polite">
+      <article class="output-card">
+        <h2>Команды для терминала</h2>
+        <textarea id="shell-output" readonly placeholder="Здесь появятся команды export..."></textarea>
+        <p class="small-note">Скопируйте команды, вставьте в терминал и нажмите Enter. Для Windows PowerShell замените <code>export</code> на <code>$Env:VARIABLE = "значение"</code>.</p>
+      </article>
+      <article class="output-card">
+        <h2>Готовый .env файл</h2>
+        <textarea id="env-output" readonly placeholder="Содержимое .env будет здесь"></textarea>
+        <p class="small-note">Сохраните текст в файле <code>.env</code> в корне проекта, затем выполните <code>source .env</code> (macOS/Linux) или используйте менеджер переменных в Windows.</p>
+      </article>
+    </section>
+
+    <footer>
+      Данные не отправляются на сервер. Страница работает локально, поэтому храните ключи в безопасном месте.
+    </footer>
+  </div>
+
+  <script>
+    const form = document.getElementById('config-form');
+    const shellOutput = document.getElementById('shell-output');
+    const envOutput = document.getElementById('env-output');
+
+    function sanitize(value) {
+      return value.trim();
+    }
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+
+      const apiId = sanitize(data.get('apiId'));
+      const apiHash = sanitize(data.get('apiHash'));
+      const botToken = sanitize(data.get('botToken'));
+      const sourceChat = sanitize(data.get('sourceChat'));
+      const destinationChat = sanitize(data.get('destinationChat'));
+      const yandexKey = sanitize(data.get('yandexKey'));
+      const background = sanitize(data.get('background'));
+
+      if (!apiId || !apiHash || !botToken || !sourceChat || !yandexKey) {
+        alert('Пожалуйста, заполните обязательные поля.');
+        return;
+      }
+
+      const shellLines = [
+        `export TELEGRAM_API_ID=${apiId}`,
+        `export TELEGRAM_API_HASH="${apiHash}"`,
+        `export TELEGRAM_BOT_TOKEN="${botToken}"`,
+        `export TELEGRAM_SOURCE_CHAT="${sourceChat}"`,
+      ];
+
+      if (destinationChat) {
+        shellLines.push(`export TELEGRAM_DESTINATION_CHAT="${destinationChat}"`);
+      }
+
+      shellLines.push(`export YANDEX_TRAFFIC_API_KEY="${yandexKey}"`);
+
+      if (background) {
+        shellLines.push(`export CARD_BACKGROUND="${background}"`);
+      }
+
+      const envLines = [
+        `TELEGRAM_API_ID=${apiId}`,
+        `TELEGRAM_API_HASH=${apiHash}`,
+        `TELEGRAM_BOT_TOKEN=${botToken}`,
+        `TELEGRAM_SOURCE_CHAT=${sourceChat}`,
+      ];
+
+      if (destinationChat) {
+        envLines.push(`TELEGRAM_DESTINATION_CHAT=${destinationChat}`);
+      }
+
+      envLines.push(`YANDEX_TRAFFIC_API_KEY=${yandexKey}`);
+
+      if (background) {
+        envLines.push(`CARD_BACKGROUND=${background}`);
+      }
+
+      shellOutput.value = shellLines.join('\n');
+      envOutput.value = envLines.join('\n');
+    });
+  </script>
+</body>
+</html>
