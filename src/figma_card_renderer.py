@@ -83,6 +83,18 @@ class _TemplateContext(dict):
         return ""
 
 
+def _normalise_node_id(node_id: str | None) -> str | None:
+    if not node_id:
+        return node_id
+    if ":" in node_id:
+        return node_id
+    if node_id.count("-") == 1:
+        left, right = node_id.split("-", 1)
+        if left.isdigit() and right.isdigit():
+            return f"{left}:{right}"
+    return node_id
+
+
 class FigmaCardRenderer:
     """Renderer that fills a predefined card layout in Figma."""
 
@@ -100,7 +112,7 @@ class FigmaCardRenderer:
     ) -> "FigmaCardRenderer":
         token = _require_env("FIGMA_TOKEN")
         file_key = _require_env("FIGMA_FILE_KEY")
-        frame_node_id = _optional_env("FIGMA_CARD_NODE_ID")
+        frame_node_id = _normalise_node_id(_optional_env("FIGMA_CARD_NODE_ID"))
         branch_id = _optional_env("FIGMA_BRANCH_ID")
         frame_node_path = _split_path_env(_optional_env("FIGMA_CARD_NODE_PATH"))
         frame_name_hint = _optional_env("FIGMA_CARD_FRAME_NAME")
@@ -142,7 +154,7 @@ class FigmaCardRenderer:
     # ------------------------------------------------------------------
     # Internal helpers
     def _resolve_node_ids(self, layer_names: Iterable[str]) -> Dict[str, str | None]:
-        _, frame_document = self._get_frame_document()
+        _, frame_document = self._get_frame_document(layer_names)
         lookup = {name: None for name in layer_names}
         self._traverse_nodes(frame_document, lookup)
         missing = [name for name, node_id in lookup.items() if node_id is None]
@@ -160,19 +172,24 @@ class FigmaCardRenderer:
             )
         return lookup
 
-    def _get_frame_document(self) -> tuple[str, Mapping[str, object]]:
+    def _get_frame_document(
+        self, expected_layer_names: Iterable[str] | None = None
+    ) -> tuple[str, Mapping[str, object]]:
         if self._frame_document_cache:
             return self._frame_document_cache
         if self.settings.frame_node_id:
-            frame = self._fetch_frame_document_by_id(self.settings.frame_node_id)
+            node_id = _normalise_node_id(self.settings.frame_node_id)
+            self.settings.frame_node_id = node_id
+            frame = self._fetch_frame_document_by_id(node_id) if node_id else None
             if frame:
-                self._frame_document_cache = (self.settings.frame_node_id, frame)
+                assert node_id is not None  # for type checker
+                self._frame_document_cache = (node_id, frame)
                 return self._frame_document_cache
             LOGGER.warning(
                 "Фрейм %s не найден, попробую подобрать по имени",
-                self.settings.frame_node_id,
+                node_id,
             )
-        frame_candidate = self._search_frame_document()
+        frame_candidate = self._search_frame_document(expected_layer_names)
         if frame_candidate:
             node_id, frame = frame_candidate
             self.settings.frame_node_id = node_id
@@ -198,7 +215,9 @@ class FigmaCardRenderer:
             return frame
         return None
 
-    def _search_frame_document(self) -> tuple[str, Mapping[str, object]] | None:
+    def _search_frame_document(
+        self, expected_layer_names: Iterable[str] | None = None
+    ) -> tuple[str, Mapping[str, object]] | None:
         response = self.session.get(
             f"{FIGMA_API_URL}/files/{self.settings.file_key}",
             params=self._branch_param(),
@@ -228,7 +247,73 @@ class FigmaCardRenderer:
             match = self._find_first_by_name(document, self.settings.frame_name_hint)
             if match:
                 return match
+        if expected_layer_names:
+            match = self._find_best_frame_by_layers(document, expected_layer_names)
+            if match:
+                return match
         return None
+
+    def _find_best_frame_by_layers(
+        self, document: Mapping[str, object], expected_layer_names: Iterable[str]
+    ) -> tuple[str, Mapping[str, object]] | None:
+        expected_normalised = {
+            self._normalise_layer_name(name) for name in expected_layer_names
+        }
+        if not expected_normalised:
+            return None
+        best_candidate: tuple[str, Mapping[str, object]] | None = None
+        best_score = 0
+        for node_id, node in self._iter_candidate_frames(document):
+            available = {
+                self._normalise_layer_name(name)
+                for name in self._collect_layer_names(node)
+            }
+            score = sum(1 for name in expected_normalised if name in available)
+            if score <= 0:
+                continue
+            if score == len(expected_normalised):
+                LOGGER.info(
+                    "Автоматически выбран фрейм %s: найдены все ожидаемые слои",
+                    node_id,
+                )
+                return node_id, node
+            if score > best_score:
+                best_candidate = (node_id, node)
+                best_score = score
+        if best_candidate:
+            LOGGER.info(
+                "Выбран фрейм %s: совпало %s из %s слоёв",
+                best_candidate[0],
+                best_score,
+                len(expected_normalised),
+            )
+        return best_candidate
+
+    def _iter_candidate_frames(
+        self, node: Mapping[str, object]
+    ) -> Iterable[tuple[str, Mapping[str, object]]]:
+        queue: list[Mapping[str, object]] = [node]
+        while queue:
+            current = queue.pop(0)
+            if not isinstance(current, Mapping):
+                continue
+            node_type = current.get("type")
+            node_id = current.get("id")
+            if (
+                isinstance(node_id, str)
+                and isinstance(node_type, str)
+                and node_type.upper() in {"FRAME", "COMPONENT", "INSTANCE"}
+            ):
+                yield node_id, current
+            children = current.get("children")
+            if isinstance(children, Sequence):
+                for child in children:
+                    if isinstance(child, Mapping):
+                        queue.append(child)
+
+    @staticmethod
+    def _normalise_layer_name(name: str) -> str:
+        return " ".join(name.split()).casefold()
 
     def _find_child_by_name(
         self, node: Mapping[str, object] | None, expected_name: str
