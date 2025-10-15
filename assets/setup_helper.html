@@ -425,7 +425,7 @@
   <div class="wrapper">
     <header>
       <h1>Настройка Crimean Bridge Bot</h1>
-      <p class="lead">Заполните форму один раз и нажмите кнопку. Мы сформируем команды для терминала и файл <code>.env</code>, чтобы вы могли запустить бота без ручного ввода значений.</p>
+      <p class="lead">Заполните форму один раз и нажмите кнопку. Мы сформируем команды для терминала, файл <code>.env</code> и параметры для Figma, чтобы вы могли запустить бота без ручного ввода значений.</p>
     </header>
 
     <div class="form-and-canvas">
@@ -448,7 +448,23 @@
         </div>
         <div>
           <label for="destination-chat">Канал для публикации</label>
-          <input id="destination-chat" name="destinationChat" type="text" placeholder="@target_channel (можно оставить пустым)" />
+          <input
+            id="destination-chat"
+            name="destinationChat"
+            type="text"
+            placeholder="@target_channel (можно оставить пустым)"
+          />
+        </div>
+        <div>
+          <label for="destination-thread">ID ветки (опционально)</label>
+          <input
+            id="destination-thread"
+            name="destinationThread"
+            type="number"
+            inputmode="numeric"
+            placeholder="Например, 123456"
+            min="0"
+          />
         </div>
         <div>
           <label for="yandex-key">Ключ Яндекс.Трафика</label>
@@ -457,6 +473,54 @@
         <div>
           <label for="background">Фон карточки (путь)</label>
           <input id="background" name="background" type="text" placeholder="/home/user/background.jpg" />
+        </div>
+        <div>
+          <label for="figma-token">Figma Personal Access Token</label>
+          <input
+            id="figma-token"
+            name="figmaToken"
+            type="text"
+            placeholder="например, figd_1AbC..."
+            required
+          />
+        </div>
+        <div>
+          <label for="figma-file-key">Figma File Key</label>
+          <input
+            id="figma-file-key"
+            name="figmaFileKey"
+            type="text"
+            placeholder="буквенно-цифровой ключ файла"
+            required
+          />
+        </div>
+        <div>
+          <label for="figma-frame">Figma Card Node ID</label>
+          <input
+            id="figma-frame"
+            name="figmaCardNodeId"
+            type="text"
+            placeholder="например, 120:4567"
+            required
+          />
+        </div>
+        <div>
+          <label for="figma-branch">Figma Branch ID (опционально)</label>
+          <input
+            id="figma-branch"
+            name="figmaBranchId"
+            type="text"
+            placeholder="например, 1234567890"
+          />
+        </div>
+        <div>
+          <label for="figma-layer-config">Figma Layer Config (путь)</label>
+          <input
+            id="figma-layer-config"
+            name="figmaLayerConfig"
+            type="text"
+            placeholder="assets/figma_layers.sample.json"
+          />
         </div>
         <div class="full-width">
           <label for="extra-notes">Дополнительные настройки (необязательно)</label>
@@ -792,7 +856,7 @@
     }
 
     function sanitize(value) {
-      return value.trim();
+      return typeof value === 'string' ? value.trim() : '';
     }
 
     form.addEventListener('submit', (event) => {
@@ -804,10 +868,16 @@
       const botToken = sanitize(data.get('botToken'));
       const sourceChat = sanitize(data.get('sourceChat'));
       const destinationChat = sanitize(data.get('destinationChat'));
+      const destinationThread = sanitize(data.get('destinationThread'));
       const yandexKey = sanitize(data.get('yandexKey'));
       const background = sanitize(data.get('background'));
+      const figmaToken = sanitize(data.get('figmaToken'));
+      const figmaFileKey = sanitize(data.get('figmaFileKey'));
+      const figmaCardNodeId = sanitize(data.get('figmaCardNodeId'));
+      const figmaBranchId = sanitize(data.get('figmaBranchId'));
+      const figmaLayerConfig = sanitize(data.get('figmaLayerConfig'));
 
-      if (!apiId || !apiHash || !botToken || !sourceChat || !yandexKey) {
+      if (!apiId || !apiHash || !botToken || !sourceChat || !yandexKey || !figmaToken || !figmaFileKey || !figmaCardNodeId) {
         alert('Пожалуйста, заполните обязательные поля.');
         return;
       }
@@ -823,10 +893,26 @@
         shellLines.push(`export TELEGRAM_DESTINATION_CHAT="${destinationChat}"`);
       }
 
+      if (destinationThread) {
+        shellLines.push(`export TELEGRAM_DESTINATION_THREAD_ID=${destinationThread}`);
+      }
+
       shellLines.push(`export YANDEX_TRAFFIC_API_KEY="${yandexKey}"`);
 
       if (background) {
         shellLines.push(`export CARD_BACKGROUND="${background}"`);
+      }
+
+      shellLines.push(`export FIGMA_TOKEN="${figmaToken}"`);
+      shellLines.push(`export FIGMA_FILE_KEY="${figmaFileKey}"`);
+      shellLines.push(`export FIGMA_CARD_NODE_ID="${figmaCardNodeId}"`);
+
+      if (figmaBranchId) {
+        shellLines.push(`export FIGMA_BRANCH_ID="${figmaBranchId}"`);
+      }
+
+      if (figmaLayerConfig) {
+        shellLines.push(`export FIGMA_LAYER_CONFIG="${figmaLayerConfig}"`);
       }
 
       const envLines = [
@@ -840,10 +926,26 @@
         envLines.push(`TELEGRAM_DESTINATION_CHAT=${destinationChat}`);
       }
 
+      if (destinationThread) {
+        envLines.push(`TELEGRAM_DESTINATION_THREAD_ID=${destinationThread}`);
+      }
+
       envLines.push(`YANDEX_TRAFFIC_API_KEY=${yandexKey}`);
 
       if (background) {
         envLines.push(`CARD_BACKGROUND=${background}`);
+      }
+
+      envLines.push(`FIGMA_TOKEN=${figmaToken}`);
+      envLines.push(`FIGMA_FILE_KEY=${figmaFileKey}`);
+      envLines.push(`FIGMA_CARD_NODE_ID=${figmaCardNodeId}`);
+
+      if (figmaBranchId) {
+        envLines.push(`FIGMA_BRANCH_ID=${figmaBranchId}`);
+      }
+
+      if (figmaLayerConfig) {
+        envLines.push(`FIGMA_LAYER_CONFIG=${figmaLayerConfig}`);
       }
 
       shellOutput.value = shellLines.join('\n');
