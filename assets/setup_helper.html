@@ -7,15 +7,23 @@
   <style>
     :root {
       color-scheme: dark light;
-      --bg: radial-gradient(circle at top, #101828 0%, #0b0f1a 40%, #05060b 100%);
-      --card-bg: rgba(255, 255, 255, 0.08);
-      --text-primary: #f8fafc;
-      --text-secondary: #cbd5f5;
-      --accent: #4f46e5;
+      --bg: radial-gradient(circle at top, #0b1220 0%, #05070f 45%, #02030a 100%);
+      --surface: rgba(13, 18, 32, 0.72);
+      --surface-subtle: rgba(255, 255, 255, 0.04);
+      --surface-strong: rgba(20, 26, 46, 0.88);
+      --text-primary: #f8fbff;
+      --text-secondary: #c9d4ff;
+      --border: rgba(148, 163, 255, 0.24);
+      --border-strong: rgba(148, 163, 255, 0.5);
+      --accent: #6366f1;
       --accent-strong: #a855f7;
-      --border: rgba(255, 255, 255, 0.12);
-      --shadow: 0 18px 45px -20px rgba(15, 23, 42, 0.8);
+      --shadow-soft: 0 24px 60px -30px rgba(15, 23, 42, 0.95);
       font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     body {
@@ -25,316 +33,272 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 32px;
+      padding: clamp(24px, 4vw, 56px);
       color: var(--text-primary);
     }
 
     .wrapper {
-      width: min(980px, 100%);
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(15, 23, 42, 0.7));
-      border-radius: 32px;
-      padding: 40px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border);
+      width: min(1100px, 100%);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(8, 12, 24, 0.88));
+      border-radius: 36px;
+      padding: clamp(32px, 5vw, 56px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-soft);
+      display: grid;
+      gap: clamp(32px, 5vw, 48px);
+    }
+
+    header.intro {
+      display: grid;
+      gap: 16px;
+      max-width: 720px;
+    }
+
+    .intro-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      background: rgba(99, 102, 241, 0.12);
+      color: rgba(226, 232, 255, 0.9);
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
 
     h1 {
-      margin-top: 0;
-      font-size: clamp(28px, 3vw, 42px);
+      margin: 0;
+      font-size: clamp(32px, 4vw, 46px);
       letter-spacing: -0.02em;
     }
 
     p.lead {
-      margin-top: 8px;
-      margin-bottom: 28px;
+      margin: 0;
       color: var(--text-secondary);
-      line-height: 1.6;
+      font-size: clamp(16px, 2vw, 18px);
     }
 
-    .form-and-canvas {
+    .layout {
       display: grid;
-      gap: 32px;
+      gap: clamp(28px, 4vw, 36px);
+    }
+
+    @media (min-width: 980px) {
+      .layout {
+        grid-template-columns: 1.05fr 0.95fr;
+        align-items: start;
+      }
+    }
+
+    .panel {
+      background: var(--surface);
+      border-radius: 28px;
+      border: 1px solid var(--surface-subtle);
+      padding: clamp(24px, 4vw, 36px);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      display: grid;
+      gap: clamp(20px, 2vw, 28px);
+    }
+
+    .panel h2 {
+      margin: 0;
+      font-size: clamp(22px, 2.6vw, 28px);
+      letter-spacing: -0.01em;
     }
 
     form {
       display: grid;
+      gap: clamp(20px, 2.4vw, 28px);
+    }
+
+    .field-grid {
+      display: grid;
+      gap: clamp(18px, 2vw, 24px);
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
+    }
+
+    .field {
+      background: var(--surface-subtle);
+      border: 1px solid rgba(148, 163, 255, 0.18);
+      border-radius: 18px;
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+      position: relative;
+      min-height: 120px;
+    }
+
+    .field.compact {
+      min-height: auto;
+    }
+
+    .field-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: start;
+      gap: 12px;
     }
 
     label {
-      display: block;
       font-weight: 600;
-      margin-bottom: 8px;
       letter-spacing: 0.01em;
+    }
+
+    .hint {
+      appearance: none;
+      border: 1px solid rgba(148, 163, 255, 0.45);
+      background: rgba(148, 163, 255, 0.08);
+      color: rgba(226, 232, 255, 0.9);
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: help;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .hint:hover,
+    .hint:focus-visible {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: rgba(129, 140, 248, 0.8);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .hint:focus-visible {
+      outline: 2px solid rgba(148, 163, 255, 0.6);
+      outline-offset: 2px;
+    }
+
+    .tooltip {
+      position: absolute;
+      top: calc(100% + 14px);
+      left: 18px;
+      max-width: min(320px, calc(100% - 36px));
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: var(--surface-strong);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-size: 13px;
+      line-height: 1.5;
+      box-shadow: var(--shadow-soft);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-6px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .hint:hover + .tooltip,
+    .hint:focus-visible + .tooltip {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
     }
 
     input {
       width: 100%;
       padding: 14px 16px;
       border-radius: 14px;
-      border: 1px solid var(--border);
-      background: rgba(15, 23, 42, 0.35);
+      border: 1px solid rgba(148, 163, 255, 0.25);
+      background: rgba(17, 25, 44, 0.72);
       color: inherit;
       font-size: 15px;
-      transition: border 0.2s ease, box-shadow 0.2s ease;
+      transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     }
 
     input:focus {
       outline: none;
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+      background: rgba(17, 25, 44, 0.92);
     }
 
-    .full-width {
-      grid-column: 1 / -1;
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: flex-end;
+      margin-top: 8px;
     }
 
-    button {
-      grid-column: 1 / -1;
-      padding: 18px;
-      border-radius: 16px;
+    button[type="submit"],
+    button[type="reset"] {
+      padding: 16px 28px;
+      border-radius: 18px;
       border: none;
       font-size: 16px;
       font-weight: 600;
       letter-spacing: 0.02em;
       cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border 0.2s ease;
+      min-width: 200px;
+    }
+
+    button[type="submit"] {
       color: #fff;
       background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 16px 32px -24px rgba(99, 102, 241, 0.9);
     }
 
-    button:hover {
+    button[type="submit"]:hover {
       transform: translateY(-1px);
-      box-shadow: 0 12px 28px -18px rgba(168, 85, 247, 0.9);
+      box-shadow: 0 18px 36px -18px rgba(99, 102, 241, 0.8);
     }
 
-    button:active {
+    button[type="submit"]:active {
       transform: translateY(0);
     }
 
-    .canvas-section {
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 28px;
-      box-shadow: 0 16px 35px -30px rgba(15, 23, 42, 1);
+    .secondary-button {
+      background: transparent;
+      border: 1px solid rgba(99, 102, 241, 0.6);
+      color: var(--text-primary);
+      box-shadow: none;
     }
 
-    .canvas-section h2 {
-      margin-top: 0;
-      margin-bottom: 12px;
-      font-size: 24px;
-      letter-spacing: -0.01em;
+    .secondary-button:hover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.12);
     }
 
-    .canvas-section p {
-      margin-top: 0;
-      margin-bottom: 24px;
-      color: var(--text-secondary);
-      line-height: 1.6;
+    .output-panel {
+      gap: 24px;
     }
 
-    .card-stage {
-      position: relative;
-      border-radius: 28px;
-      overflow: hidden;
-      border: 1px dashed rgba(148, 163, 184, 0.4);
-      background: linear-gradient(160deg, rgba(59, 130, 246, 0.2), rgba(129, 140, 248, 0.2)), rgba(15, 23, 42, 0.68);
-      aspect-ratio: 1436 / 1080;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 32px;
-      isolation: isolate;
-    }
-
-    .card-stage::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image: linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
-      background-size: 72px 72px;
-      mix-blend-mode: screen;
-      opacity: 0.6;
-      pointer-events: none;
-    }
-
-    .card-safe-zone {
-      position: absolute;
-      inset: 6%;
-      border: 1px dashed rgba(148, 163, 184, 0.35);
-      border-radius: 22px;
-      pointer-events: none;
-    }
-
-    .card-background-hint {
-      position: absolute;
-      top: 16px;
-      left: 16px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.72);
-      font-size: 12px;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      pointer-events: none;
-    }
-
-    .marker {
-      position: absolute;
-      transform: translate(-50%, -50%);
-      display: inline-flex;
-      flex-direction: column;
-      gap: 6px;
-      padding: 14px 18px;
-      border-radius: 16px;
-      background: rgba(15, 23, 42, 0.78);
-      border: 1px solid rgba(148, 163, 184, 0.3);
-      box-shadow: 0 18px 28px -26px rgba(15, 23, 42, 1);
-      min-width: 160px;
-      pointer-events: none;
-    }
-
-    .marker-label {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      color: rgba(226, 232, 240, 0.72);
-    }
-
-    .marker-value {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
-
-    .marker[data-type="traffic"] {
-      flex-direction: row;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-    }
-
-    .marker[data-type="traffic"] .marker-label {
-      letter-spacing: 0.12em;
-    }
-
-    .marker[data-type="traffic"] .marker-value {
-      font-size: 28px;
-    }
-
-    .marker[data-type="traffic"]::before {
-      content: "";
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      border: 3px solid rgba(148, 163, 184, 0.4);
-      box-shadow: inset 0 0 0 4px currentColor;
-      color: #4ade80;
-      opacity: 0.9;
-    }
-
-    .marker[data-signal="success"]::before {
-      color: #4ade80;
-    }
-
-    .marker[data-signal="warning"]::before {
-      color: #facc15;
-    }
-
-    .marker[data-signal="danger"]::before {
-      color: #f87171;
-    }
-
-    .marker-config {
-      margin-top: 28px;
+    .output-grid {
       display: grid;
       gap: 20px;
     }
 
-    .marker-config h3 {
-      margin: 0;
-      font-size: 18px;
+    @media (min-width: 640px) {
+      .output-grid {
+        grid-template-columns: repeat( auto-fit, minmax(240px, 1fr));
+      }
     }
 
-    .marker-config p {
-      margin: 0;
-      color: var(--text-secondary);
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .marker-fields {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-
-    .marker-field {
-      background: rgba(15, 23, 42, 0.45);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 16px;
+    .output-card {
+      padding: 20px;
+      border-radius: 20px;
+      background: rgba(11, 16, 30, 0.9);
+      border: 1px solid rgba(148, 163, 255, 0.2);
       display: grid;
       gap: 12px;
     }
 
-    .marker-field h4 {
+    .output-card h3 {
       margin: 0;
-      font-size: 16px;
-      letter-spacing: -0.01em;
-    }
-
-    .marker-field label {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: rgba(226, 232, 240, 0.72);
-    }
-
-    .marker-field label span {
-      display: block;
-      margin-top: 6px;
-      font-size: 13px;
-      letter-spacing: 0;
-      text-transform: none;
-      color: var(--text-primary);
-    }
-
-    .marker-field input[type="number"] {
-      margin-bottom: 4px;
-    }
-
-    .axis-output {
-      font-size: 12px;
-      color: var(--text-secondary);
-      display: inline-flex;
-      gap: 6px;
-      align-items: baseline;
-    }
-
-    .output {
-      margin-top: 36px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-    }
-
-    .output-card {
-      padding: 24px;
-      border-radius: 20px;
-      background: rgba(15, 23, 42, 0.55);
-      border: 1px solid var(--border);
-      box-shadow: 0 12px 30px -22px rgba(15, 23, 42, 0.9);
-    }
-
-    .output-card h2 {
-      margin-top: 0;
-      font-size: 20px;
+      font-size: 18px;
     }
 
     textarea {
@@ -342,56 +306,28 @@
       min-height: 160px;
       padding: 16px;
       border-radius: 14px;
-      border: 1px solid var(--border);
-      background: rgba(15, 23, 42, 0.35);
+      border: 1px solid rgba(148, 163, 255, 0.25);
+      background: rgba(17, 25, 44, 0.72);
       color: inherit;
       font-size: 14px;
       line-height: 1.5;
       resize: vertical;
+      transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     }
 
     textarea:focus {
       outline: none;
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
-    }
-
-    .marker-json {
-      min-height: 200px;
-    }
-
-    .secondary-button {
-      border: 1px solid rgba(99, 102, 241, 0.6);
-      background: transparent;
-      color: var(--text-primary);
-      padding: 12px 18px;
-      border-radius: 14px;
-      cursor: pointer;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      transition: border 0.2s ease, transform 0.2s ease;
-      width: 100%;
-      margin-top: 16px;
-    }
-
-    .secondary-button:hover {
-      border-color: var(--accent);
-      transform: translateY(-1px);
-    }
-
-    .secondary-button:active {
-      transform: translateY(0);
+      background: rgba(17, 25, 44, 0.92);
     }
 
     .small-note {
       font-size: 13px;
       color: var(--text-secondary);
-      margin-top: 12px;
-      line-height: 1.5;
     }
 
     footer {
-      margin-top: 40px;
       text-align: center;
       color: var(--text-secondary);
       font-size: 13px;
@@ -401,243 +337,169 @@
       color: #93c5fd;
     }
 
-    @media (min-width: 1080px) {
-      .form-and-canvas {
-        grid-template-columns: 1.05fr 0.95fr;
-        align-items: start;
+    @media (max-width: 720px) {
+      .field {
+        min-height: auto;
       }
-    }
 
-    @media (max-width: 640px) {
-      body {
-        padding: 16px;
+      .tooltip {
+        left: 50%;
+        transform: translate(-50%, -6px);
+        max-width: min(320px, 86vw);
       }
-      .wrapper {
-        padding: 28px 22px;
-      }
-      .card-stage {
-        padding: 16px;
+
+      .hint:hover + .tooltip,
+      .hint:focus-visible + .tooltip {
+        transform: translate(-50%, 0);
       }
     }
   </style>
 </head>
 <body>
   <div class="wrapper">
-    <header>
+    <header class="intro">
+      <span class="intro-tag">Готовим окружение для запуска</span>
       <h1>Настройка Crimean Bridge Bot</h1>
-      <p class="lead">Заполните форму один раз и нажмите кнопку. Мы сформируем команды для терминала и файл <code>.env</code>, чтобы вы могли запустить бота без ручного ввода значений.</p>
+      <p class="lead">Заполните форму один раз — и мы соберём для вас команды терминала и готовый файл <code>.env</code>. Никаких конфликтов блоков: просто введите данные и скопируйте результат.</p>
     </header>
 
-    <div class="form-and-canvas">
-      <form id="config-form">
-        <div>
-          <label for="api-id">Telegram API ID</label>
-          <input id="api-id" name="apiId" type="number" placeholder="Например, 123456" required />
-        </div>
-        <div>
-          <label for="api-hash">Telegram API Hash</label>
-          <input id="api-hash" name="apiHash" type="text" placeholder="40-символьная строка" required />
-        </div>
-        <div>
-          <label for="bot-token">Токен Telegram-бота</label>
-          <input id="bot-token" name="botToken" type="text" placeholder="123456:ABC-DEF..." required />
-        </div>
-        <div>
-          <label for="source-chat">Канал-источник</label>
-          <input id="source-chat" name="sourceChat" type="text" placeholder="@source_channel или -100123456" required />
-        </div>
-        <div>
-          <label for="destination-chat">Канал для публикации</label>
-          <input id="destination-chat" name="destinationChat" type="text" placeholder="@target_channel (можно оставить пустым)" />
-        </div>
-        <div>
-          <label for="yandex-key">Ключ Яндекс.Трафика</label>
-          <input id="yandex-key" name="yandexKey" type="text" placeholder="AIza... или другой ключ" required />
-        </div>
-        <div>
-          <label for="background">Фон карточки (путь)</label>
-          <input id="background" name="background" type="text" placeholder="/home/user/background.jpg" />
-        </div>
-        <div class="full-width">
-          <label for="extra-notes">Дополнительные настройки (необязательно)</label>
-          <input id="extra-notes" name="extra" type="text" placeholder="Например, TELEGRAM_DESTINATION_CHAT можно пропустить" />
-        </div>
-        <button type="submit">Сгенерировать команды</button>
-      </form>
+    <main class="layout">
+      <section class="panel form-panel" aria-label="Форма для заполнения данных">
+        <h2>Данные, которые понадобятся</h2>
+        <form id="config-form">
+          <div class="field-grid">
+            <div class="field">
+              <div class="field-header">
+                <label for="api-id">Telegram API ID</label>
+                <button type="button" class="hint" aria-describedby="hint-api-id" aria-label="Где взять Telegram API ID?">?</button>
+                <span id="hint-api-id" class="tooltip" role="tooltip">Зайдите на сайт my.telegram.org, авторизуйтесь по номеру телефона, откройте раздел «API development tools» и скопируйте числовой App ID.</span>
+              </div>
+              <input id="api-id" name="apiId" type="number" placeholder="Например, 123456" required />
+            </div>
 
-      <section class="canvas-section" aria-labelledby="canvas-title">
-        <h2 id="canvas-title">Холст карточки и маркеры элементов</h2>
-        <p>Используйте схему, чтобы определить координаты ключевых блоков на итоговом изображении. Настроенные точки помогут точнее автоматизировать размещение даты, времени, погоды и показателей загруженности.</p>
+            <div class="field">
+              <div class="field-header">
+                <label for="api-hash">Telegram API Hash</label>
+                <button type="button" class="hint" aria-describedby="hint-api-hash" aria-label="Где взять Telegram API Hash?">?</button>
+                <span id="hint-api-hash" class="tooltip" role="tooltip">На той же странице my.telegram.org после создания приложения появится App Hash — скопируйте его целиком без пробелов.</span>
+              </div>
+              <input id="api-hash" name="apiHash" type="text" placeholder="40-символьная строка" required />
+            </div>
 
-        <div class="card-stage" id="card-stage">
-          <div class="card-background-hint" id="background-hint">Фон: не выбран</div>
-          <div class="card-safe-zone" aria-hidden="true"></div>
-          <div class="marker" data-marker-key="date" data-type="text">
-            <span class="marker-label">Дата</span>
-            <span class="marker-value" data-role="value">СР 08.10</span>
-          </div>
-          <div class="marker" data-marker-key="time" data-type="text">
-            <span class="marker-label">Время</span>
-            <span class="marker-value" data-role="value">15:00</span>
-          </div>
-          <div class="marker" data-marker-key="weather" data-type="text">
-            <span class="marker-label">Погода</span>
-            <span class="marker-value" data-role="value">+12° · Облачно</span>
-          </div>
-          <div class="marker" data-marker-key="crimea" data-type="traffic" data-signal="warning">
-            <span class="marker-label">В Крым</span>
-            <span class="marker-value" data-role="value">6</span>
-          </div>
-          <div class="marker" data-marker-key="kuban" data-type="traffic" data-signal="success">
-            <span class="marker-label">На Кубань</span>
-            <span class="marker-value" data-role="value">3</span>
-          </div>
-        </div>
+            <div class="field">
+              <div class="field-header">
+                <label for="bot-token">Токен Telegram-бота</label>
+                <button type="button" class="hint" aria-describedby="hint-bot-token" aria-label="Где взять токен бота?">?</button>
+                <span id="hint-bot-token" class="tooltip" role="tooltip">Напишите боту @BotFather, создайте или выберите нужного бота и скопируйте токен из ответа (строка вида 123456:ABC-DEF...).</span>
+              </div>
+              <input id="bot-token" name="botToken" type="text" placeholder="123456:ABC-DEF..." required />
+            </div>
 
-        <div class="marker-config">
-          <div>
-            <h3>Координаты и подписи</h3>
-            <p>Координаты задаются в пикселях относительно изображения 1436×1080. Настройте значения и сохраните конфигурацию для использования в пайплайне генерации карточки.</p>
-          </div>
-          <div class="marker-fields">
-            <div class="marker-field" data-marker="date">
-              <h4>Дата</h4>
-              <label>
-                Горизонталь (px)
-                <span>
-                  <input type="number" min="0" max="1436" step="1" value="186" data-axis="x" />
-                  <span class="axis-output" data-axis-output="x">13% по ширине</span>
-                </span>
-              </label>
-              <label>
-                Вертикаль (px)
-                <span>
-                  <input type="number" min="0" max="1080" step="1" value="128" data-axis="y" />
-                  <span class="axis-output" data-axis-output="y">12% по высоте</span>
-                </span>
-              </label>
-              <label>
-                Пример текста
-                <span>
-                  <input type="text" value="СР 08.10" data-prop="text" />
-                </span>
-              </label>
+            <div class="field">
+              <div class="field-header">
+                <label for="source-chat">Канал-источник</label>
+                <button type="button" class="hint" aria-describedby="hint-source-chat" aria-label="Что указать в канале-источнике?">?</button>
+                <span id="hint-source-chat" class="tooltip" role="tooltip">Откройте канал или чат, из которого бот берёт новости, и скопируйте его @username, ссылку t.me/... или числовой ID из раздела «Информация».</span>
+              </div>
+              <input id="source-chat" name="sourceChat" type="text" placeholder="@source_channel или -100123456" required />
             </div>
-            <div class="marker-field" data-marker="time">
-              <h4>Время</h4>
-              <label>
-                Горизонталь (px)
-                <span>
-                  <input type="number" min="0" max="1436" step="1" value="186" data-axis="x" />
-                  <span class="axis-output" data-axis-output="x">13% по ширине</span>
-                </span>
-              </label>
-              <label>
-                Вертикаль (px)
-                <span>
-                  <input type="number" min="0" max="1080" step="1" value="224" data-axis="y" />
-                  <span class="axis-output" data-axis-output="y">21% по высоте</span>
-                </span>
-              </label>
-              <label>
-                Пример текста
-                <span>
-                  <input type="text" value="15:00" data-prop="text" />
-                </span>
-              </label>
+
+            <div class="field">
+              <div class="field-header">
+                <label for="destination-chat">Канал для публикации</label>
+                <button type="button" class="hint" aria-describedby="hint-destination-chat" aria-label="Нужно ли указывать канал для публикации?">?</button>
+                <span id="hint-destination-chat" class="tooltip" role="tooltip">Если бот публикует материалы в другом канале, скопируйте его @username или ID. Если публикация не нужна, оставьте поле пустым.</span>
+              </div>
+              <input id="destination-chat" name="destinationChat" type="text" placeholder="@target_channel (можно оставить пустым)" />
             </div>
-            <div class="marker-field" data-marker="weather">
-              <h4>Погода</h4>
-              <label>
-                Горизонталь (px)
-                <span>
-                  <input type="number" min="0" max="1436" step="1" value="200" data-axis="x" />
-                  <span class="axis-output" data-axis-output="x">14% по ширине</span>
-                </span>
-              </label>
-              <label>
-                Вертикаль (px)
-                <span>
-                  <input type="number" min="0" max="1080" step="1" value="344" data-axis="y" />
-                  <span class="axis-output" data-axis-output="y">32% по высоте</span>
-                </span>
-              </label>
-              <label>
-                Пример текста
-                <span>
-                  <input type="text" value="+12° · Облачно" data-prop="text" />
-                </span>
-              </label>
+
+            <div class="field compact">
+              <div class="field-header">
+                <label for="destination-thread">ID ветки (опционально)</label>
+                <button type="button" class="hint" aria-describedby="hint-destination-thread" aria-label="Где найти ID ветки?">?</button>
+                <span id="hint-destination-thread" class="tooltip" role="tooltip">Для форум-каналов Telegram откройте нужную тему, выберите «Скопировать ссылку на тему» и возьмите число после /thread/. Оставьте поле пустым для обычных каналов.</span>
+              </div>
+              <input id="destination-thread" name="destinationThread" type="number" inputmode="numeric" placeholder="Например, 123456" min="0" />
             </div>
-            <div class="marker-field" data-marker="crimea">
-              <h4>В Крым</h4>
-              <label>
-                Горизонталь (px)
-                <span>
-                  <input type="number" min="0" max="1436" step="1" value="1090" data-axis="x" />
-                  <span class="axis-output" data-axis-output="x">76% по ширине</span>
-                </span>
-              </label>
-              <label>
-                Вертикаль (px)
-                <span>
-                  <input type="number" min="0" max="1080" step="1" value="496" data-axis="y" />
-                  <span class="axis-output" data-axis-output="y">46% по высоте</span>
-                </span>
-              </label>
-              <label>
-                Значение (0–10)
-                <span>
-                  <input type="number" min="0" max="10" step="1" value="6" data-prop="score" />
-                </span>
-              </label>
+
+            <div class="field">
+              <div class="field-header">
+                <label for="yandex-key">Ключ Яндекс.Трафика</label>
+                <button type="button" class="hint" aria-describedby="hint-yandex-key" aria-label="Где взять ключ Яндекс.Трафика?">?</button>
+                <span id="hint-yandex-key" class="tooltip" role="tooltip">Войдите в свой аккаунт Яндекса, создайте API-ключ в сервисе «Яндекс.Трафик» на странице разработчика и скопируйте полученную строку.</span>
+              </div>
+              <input id="yandex-key" name="yandexKey" type="text" placeholder="AIza... или другой ключ" required />
             </div>
-            <div class="marker-field" data-marker="kuban">
-              <h4>На Кубань</h4>
-              <label>
-                Горизонталь (px)
-                <span>
-                  <input type="number" min="0" max="1436" step="1" value="1090" data-axis="x" />
-                  <span class="axis-output" data-axis-output="x">76% по ширине</span>
-                </span>
-              </label>
-              <label>
-                Вертикаль (px)
-                <span>
-                  <input type="number" min="0" max="1080" step="1" value="656" data-axis="y" />
-                  <span class="axis-output" data-axis-output="y">61% по высоте</span>
-                </span>
-              </label>
-              <label>
-                Значение (0–10)
-                <span>
-                  <input type="number" min="0" max="10" step="1" value="3" data-prop="score" />
-                </span>
-              </label>
+
+            <div class="field">
+              <div class="field-header">
+                <label for="figma-token">Figma Personal Access Token</label>
+                <button type="button" class="hint" aria-describedby="hint-figma-token" aria-label="Как получить токен Figma?">?</button>
+                <span id="hint-figma-token" class="tooltip" role="tooltip">В Figma откройте меню с именем профиля → Settings → Personal access tokens, создайте новый токен и скопируйте его значение.</span>
+              </div>
+              <input id="figma-token" name="figmaToken" type="text" placeholder="например, figd_1AbC..." required />
+            </div>
+
+            <div class="field">
+              <div class="field-header">
+                <label for="figma-file-key">Figma File Key</label>
+                <button type="button" class="hint" aria-describedby="hint-figma-file" aria-label="Что такое Figma File Key?">?</button>
+                <span id="hint-figma-file" class="tooltip" role="tooltip">Откройте макет в Figma и скопируйте часть адреса между /file/ и следующим / — это буквенно-цифровой ключ файла.</span>
+              </div>
+              <input id="figma-file-key" name="figmaFileKey" type="text" placeholder="буквенно-цифровой ключ файла" required />
+            </div>
+
+            <div class="field">
+              <div class="field-header">
+                <label for="figma-frame">Figma Card Node ID</label>
+                <button type="button" class="hint" aria-describedby="hint-figma-node" aria-label="Где найти Figma Card Node ID?">?</button>
+                <span id="hint-figma-node" class="tooltip" role="tooltip">Выделите кадр карточки в Figma, нажмите Ctrl/Cmd+L для копирования ссылки и возьмите идентификатор вида 120:456 из конца адреса.</span>
+              </div>
+              <input id="figma-frame" name="figmaCardNodeId" type="text" placeholder="например, 120:4567" required />
+            </div>
+
+            <div class="field compact">
+              <div class="field-header">
+                <label for="figma-branch">Figma Branch ID (опционально)</label>
+                <button type="button" class="hint" aria-describedby="hint-figma-branch" aria-label="Когда нужен Figma Branch ID?">?</button>
+                <span id="hint-figma-branch" class="tooltip" role="tooltip">Если макет находится во ветке, в адресе после /branch/ будет её ID. Скопируйте это значение, а для основной ветки оставьте поле пустым.</span>
+              </div>
+              <input id="figma-branch" name="figmaBranchId" type="text" placeholder="например, 1234567890" />
+            </div>
+
+            <div class="field compact">
+              <div class="field-header">
+                <label for="figma-layer-config">Figma Layer Config (путь)</label>
+                <button type="button" class="hint" aria-describedby="hint-figma-config" aria-label="Что указать в Figma Layer Config?">?</button>
+                <span id="hint-figma-config" class="tooltip" role="tooltip">Укажите путь к JSON-файлу с настройками слоёв, если он используется (например, configs/card.json). Если файл не нужен, оставьте поле пустым.</span>
+              </div>
+              <input id="figma-layer-config" name="figmaLayerConfig" type="text" placeholder="путь к JSON с конфигурацией слоёв" />
             </div>
           </div>
+
+          <div class="actions">
+            <button type="reset" class="secondary-button">Очистить</button>
+            <button type="submit">Сформировать команды</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel output-panel" aria-live="polite">
+        <h2>Готовые результаты</h2>
+        <div class="output-grid">
           <article class="output-card">
-            <h2>Экспорт маркеров</h2>
-            <textarea id="marker-output" class="marker-json" readonly></textarea>
-            <button type="button" class="secondary-button" id="copy-markers">Скопировать JSON</button>
-            <p class="small-note">JSON содержит позиции и подписи элементов. Подключите файл к рендереру карточки и разместите блоки строго по координатам.</p>
+            <h3>Команды для терминала</h3>
+            <textarea id="shell-output" readonly placeholder="Здесь появятся команды export..."></textarea>
+            <p class="small-note">Скопируйте команды, вставьте в терминал и нажмите Enter. Для Windows PowerShell замените <code>export</code> на <code>$Env:VARIABLE = &quot;значение&quot;</code>.</p>
+          </article>
+          <article class="output-card">
+            <h3>Готовый .env файл</h3>
+            <textarea id="env-output" readonly placeholder="Содержимое .env будет здесь"></textarea>
+            <p class="small-note">Сохраните текст в файле <code>.env</code> в корне проекта, затем выполните <code>source .env</code> (macOS/Linux) или используйте менеджер переменных в Windows.</p>
           </article>
         </div>
       </section>
-    </div>
-
-    <section class="output" aria-live="polite">
-      <article class="output-card">
-        <h2>Команды для терминала</h2>
-        <textarea id="shell-output" readonly placeholder="Здесь появятся команды export..."></textarea>
-        <p class="small-note">Скопируйте команды, вставьте в терминал и нажмите Enter. Для Windows PowerShell замените <code>export</code> на <code>$Env:VARIABLE = \"значение\"</code>.</p>
-      </article>
-      <article class="output-card">
-        <h2>Готовый .env файл</h2>
-        <textarea id="env-output" readonly placeholder="Содержимое .env будет здесь"></textarea>
-        <p class="small-note">Сохраните текст в файле <code>.env</code> в корне проекта, затем выполните <code>source .env</code> (macOS/Linux) или используйте менеджер переменных в Windows.</p>
-      </article>
-    </section>
+    </main>
 
     <footer>
       Данные не отправляются на сервер. Страница работает локально, поэтому храните ключи в безопасном месте.
@@ -648,151 +510,9 @@
     const form = document.getElementById('config-form');
     const shellOutput = document.getElementById('shell-output');
     const envOutput = document.getElementById('env-output');
-    const cardStage = document.getElementById('card-stage');
-    const backgroundInput = document.getElementById('background');
-    const backgroundHint = document.getElementById('background-hint');
-    const markerOutput = document.getElementById('marker-output');
-    const copyMarkersButton = document.getElementById('copy-markers');
-
-    const CARD_WIDTH = 1436;
-    const CARD_HEIGHT = 1080;
-
-    const markerState = {
-      date: { label: 'Дата', type: 'text', text: 'СР 08.10', x: 186, y: 128 },
-      time: { label: 'Время', type: 'text', text: '15:00', x: 186, y: 224 },
-      weather: { label: 'Погода', type: 'text', text: '+12° · Облачно', x: 200, y: 344 },
-      crimea: { label: 'В Крым', type: 'traffic', score: 6, x: 1090, y: 496 },
-      kuban: { label: 'На Кубань', type: 'traffic', score: 3, x: 1090, y: 656 }
-    };
-
-    const markerElements = {};
-    document.querySelectorAll('.marker[data-marker-key]').forEach((element) => {
-      markerElements[element.dataset.markerKey] = element;
-    });
-
-    function clamp(value, min, max) {
-      return Math.min(Math.max(value, min), max);
-    }
-
-    function trafficSignal(score) {
-      if (score <= 3) {
-        return 'success';
-      }
-      if (score <= 6) {
-        return 'warning';
-      }
-      return 'danger';
-    }
-
-    function updateMarkerElement(key) {
-      const state = markerState[key];
-      const element = markerElements[key];
-      if (!state || !element) {
-        return;
-      }
-
-      const topPercent = (state.y / CARD_HEIGHT) * 100;
-      const leftPercent = (state.x / CARD_WIDTH) * 100;
-      element.style.top = `${topPercent}%`;
-      element.style.left = `${leftPercent}%`;
-
-      const valueNode = element.querySelector('[data-role="value"]');
-      if (state.type === 'text') {
-        valueNode.textContent = state.text;
-      } else {
-        valueNode.textContent = state.score;
-        element.dataset.signal = trafficSignal(state.score);
-      }
-    }
-
-    function updateAxisOutput(field, axis, value) {
-      const output = field.querySelector(`[data-axis-output="${axis}"]`);
-      if (!output) {
-        return;
-      }
-      const dimension = axis === 'x' ? CARD_WIDTH : CARD_HEIGHT;
-      const percent = Math.round((value / dimension) * 100);
-      output.textContent = `${percent}% по ${axis === 'x' ? 'ширине' : 'высоте'}`;
-    }
-
-    function refreshMarkerExport() {
-      const payload = {};
-      Object.entries(markerState).forEach(([key, state]) => {
-        if (state.type === 'text') {
-          payload[key] = {
-            label: state.label,
-            type: state.type,
-            text: state.text,
-            x: Math.round(state.x),
-            y: Math.round(state.y)
-          };
-        } else {
-          payload[key] = {
-            label: state.label,
-            type: state.type,
-            score: state.score,
-            signal: trafficSignal(state.score),
-            x: Math.round(state.x),
-            y: Math.round(state.y)
-          };
-        }
-      });
-      markerOutput.value = JSON.stringify(payload, null, 2);
-    }
-
-    function initializeMarkerControls() {
-      document.querySelectorAll('.marker-field').forEach((field) => {
-        const key = field.dataset.marker;
-        const state = markerState[key];
-        if (!state) {
-          return;
-        }
-
-        field.querySelectorAll('input[data-axis]').forEach((input) => {
-          const axis = input.dataset.axis;
-          const dimension = axis === 'x' ? CARD_WIDTH : CARD_HEIGHT;
-          input.value = state[axis];
-          updateAxisOutput(field, axis, state[axis]);
-          input.addEventListener('input', () => {
-            const numeric = clamp(Number(input.value), 0, dimension);
-            state[axis] = numeric;
-            input.value = numeric;
-            updateAxisOutput(field, axis, numeric);
-            updateMarkerElement(key);
-            refreshMarkerExport();
-          });
-        });
-
-        field.querySelectorAll('input[data-prop="text"]').forEach((input) => {
-          input.value = state.text;
-          input.addEventListener('input', () => {
-            state.text = input.value;
-            updateMarkerElement(key);
-            refreshMarkerExport();
-          });
-        });
-
-        field.querySelectorAll('input[data-prop="score"]').forEach((input) => {
-          input.value = state.score;
-          input.addEventListener('input', () => {
-            const numeric = clamp(Number(input.value), 0, 10);
-            state.score = numeric;
-            input.value = numeric;
-            updateMarkerElement(key);
-            refreshMarkerExport();
-          });
-        });
-      });
-    }
-
-    function initializeMarkers() {
-      Object.keys(markerState).forEach((key) => updateMarkerElement(key));
-      refreshMarkerExport();
-      initializeMarkerControls();
-    }
 
     function sanitize(value) {
-      return value.trim();
+      return typeof value === 'string' ? value.trim() : '';
     }
 
     form.addEventListener('submit', (event) => {
@@ -804,10 +524,15 @@
       const botToken = sanitize(data.get('botToken'));
       const sourceChat = sanitize(data.get('sourceChat'));
       const destinationChat = sanitize(data.get('destinationChat'));
+      const destinationThread = sanitize(data.get('destinationThread'));
       const yandexKey = sanitize(data.get('yandexKey'));
-      const background = sanitize(data.get('background'));
+      const figmaToken = sanitize(data.get('figmaToken'));
+      const figmaFileKey = sanitize(data.get('figmaFileKey'));
+      const figmaCardNodeId = sanitize(data.get('figmaCardNodeId'));
+      const figmaBranchId = sanitize(data.get('figmaBranchId'));
+      const figmaLayerConfig = sanitize(data.get('figmaLayerConfig'));
 
-      if (!apiId || !apiHash || !botToken || !sourceChat || !yandexKey) {
+      if (!apiId || !apiHash || !botToken || !sourceChat || !yandexKey || !figmaToken || !figmaFileKey || !figmaCardNodeId) {
         alert('Пожалуйста, заполните обязательные поля.');
         return;
       }
@@ -823,10 +548,22 @@
         shellLines.push(`export TELEGRAM_DESTINATION_CHAT="${destinationChat}"`);
       }
 
+      if (destinationThread) {
+        shellLines.push(`export TELEGRAM_DESTINATION_THREAD_ID=${destinationThread}`);
+      }
+
       shellLines.push(`export YANDEX_TRAFFIC_API_KEY="${yandexKey}"`);
 
-      if (background) {
-        shellLines.push(`export CARD_BACKGROUND="${background}"`);
+      shellLines.push(`export FIGMA_TOKEN="${figmaToken}"`);
+      shellLines.push(`export FIGMA_FILE_KEY="${figmaFileKey}"`);
+      shellLines.push(`export FIGMA_CARD_NODE_ID="${figmaCardNodeId}"`);
+
+      if (figmaBranchId) {
+        shellLines.push(`export FIGMA_BRANCH_ID="${figmaBranchId}"`);
+      }
+
+      if (figmaLayerConfig) {
+        shellLines.push(`export FIGMA_LAYER_CONFIG="${figmaLayerConfig}"`);
       }
 
       const envLines = [
@@ -840,43 +577,32 @@
         envLines.push(`TELEGRAM_DESTINATION_CHAT=${destinationChat}`);
       }
 
+      if (destinationThread) {
+        envLines.push(`TELEGRAM_DESTINATION_THREAD_ID=${destinationThread}`);
+      }
+
       envLines.push(`YANDEX_TRAFFIC_API_KEY=${yandexKey}`);
 
-      if (background) {
-        envLines.push(`CARD_BACKGROUND=${background}`);
+      envLines.push(`FIGMA_TOKEN=${figmaToken}`);
+      envLines.push(`FIGMA_FILE_KEY=${figmaFileKey}`);
+      envLines.push(`FIGMA_CARD_NODE_ID=${figmaCardNodeId}`);
+
+      if (figmaBranchId) {
+        envLines.push(`FIGMA_BRANCH_ID=${figmaBranchId}`);
+      }
+
+      if (figmaLayerConfig) {
+        envLines.push(`FIGMA_LAYER_CONFIG=${figmaLayerConfig}`);
       }
 
       shellOutput.value = shellLines.join('\n');
       envOutput.value = envLines.join('\n');
     });
 
-    if (backgroundInput) {
-      backgroundInput.addEventListener('input', () => {
-        const value = backgroundInput.value.trim();
-        if (value) {
-          backgroundHint.textContent = `Фон: ${value}`;
-        } else {
-          backgroundHint.textContent = 'Фон: не выбран';
-        }
-      });
-    }
-
-    if (copyMarkersButton) {
-      copyMarkersButton.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(markerOutput.value);
-          const originalText = copyMarkersButton.textContent;
-          copyMarkersButton.textContent = 'Скопировано!';
-          setTimeout(() => {
-            copyMarkersButton.textContent = originalText;
-          }, 1600);
-        } catch (error) {
-          alert('Не удалось скопировать JSON автоматически, скопируйте текст вручную.');
-        }
-      });
-    }
-
-    initializeMarkers();
+    form.addEventListener('reset', () => {
+      shellOutput.value = '';
+      envOutput.value = '';
+    });
   </script>
 </body>
 </html>

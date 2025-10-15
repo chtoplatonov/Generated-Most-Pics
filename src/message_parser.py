@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime, time
 from typing import Iterable, Tuple
 
@@ -21,6 +22,30 @@ def _parse_time(value: str) -> time:
     raise ValueError(f"Unsupported time format: {value!r}")
 
 
+def _split_fragments(text: str) -> list[str]:
+    """Split a block of text into meaningful fragments.
+
+    The channel messages are usually separated by newlines, but when a user
+    copies the text manually the direction sentences can end up on the same
+    line.  We therefore split by newlines first and then by sentence
+    boundaries, trimming bullet characters like "-" or "•".
+    """
+
+    fragments: list[str] = []
+    raw_blocks = re.split(r"[\r\n]+", text)
+    for block in raw_blocks:
+        cleaned = block.strip()
+        if not cleaned:
+            continue
+        # Further split combined sentences while keeping punctuation.
+        sentences = re.split(r"(?<=[.!?])\s+(?=[А-ЯA-Z])", cleaned)
+        for sentence in sentences:
+            normalized = sentence.strip(" \t-–—•")
+            if normalized:
+                fragments.append(normalized)
+    return fragments
+
+
 def parse_bridge_message(message: str, *, timezone: str = "Europe/Moscow") -> BridgeReport:
     """Parse a Telegram message about the Crimean bridge.
 
@@ -35,11 +60,16 @@ def parse_bridge_message(message: str, *, timezone: str = "Europe/Moscow") -> Br
     if not message.strip():
         raise ValueError("Message is empty")
 
-    lines = [line.strip() for line in message.splitlines() if line.strip()]
+    lines = [line for line in message.splitlines() if line.strip()]
     if not lines:
         raise ValueError("Message contains no meaningful content")
 
-    report_time = _parse_time(lines[0])
+    first_line = lines[0].strip()
+    time_match = re.search(r"(\d{1,2}[:.]\d{2})", first_line)
+    if not time_match:
+        raise ValueError(f"Could not detect report time in message: {first_line!r}")
+
+    report_time = _parse_time(time_match.group(1))
     tzinfo = tz.gettz(timezone)
     if tzinfo is None:
         raise ValueError(f"Unknown timezone: {timezone}")
@@ -47,7 +77,18 @@ def parse_bridge_message(message: str, *, timezone: str = "Europe/Moscow") -> Br
     now = datetime.now(tzinfo)
     report_datetime = datetime.combine(now.date(), report_time, tzinfo=tzinfo)
 
-    kerch_text, taman_text = _extract_direction_texts(lines[1:])
+    # Collect the remaining content from the first line (after the time) and
+    # every other line.
+    suffix = first_line[time_match.end() :].strip(" \t-–—•:;,")
+    remaining_lines = []
+    if suffix:
+        remaining_lines.append(suffix)
+    for extra in lines[1:]:
+        remaining_lines.append(extra.strip())
+
+    fragments = _split_fragments("\n".join(remaining_lines))
+
+    kerch_text, taman_text = _extract_direction_texts(fragments)
 
     return BridgeReport(time=report_datetime, kerch_text=kerch_text, taman_text=taman_text)
 

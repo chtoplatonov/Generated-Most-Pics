@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -13,12 +14,26 @@ from PIL import Image
 
 from .data_providers.traffic import DirectionConfig, TrafficConfig, YandexTrafficClient
 from .data_providers.weather import WeatherClient
+from .env_loader import load_dotenv
 from .message_parser import parse_bridge_message
 from .models import CardData, TrafficScore
 from .figma_card_renderer import FigmaCardRenderer
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+class FriendlyArgumentParser(argparse.ArgumentParser):
+    """ArgumentParser with hints for common mistakes."""
+
+    def error(self, message: str) -> None:  # noqa: D401 - keep argparse signature
+        if "argument -m/--message" in message and "expected one argument" in message:
+            message += (
+                "\nПодсказка: если хотите передать текст прямо в команду, "
+                "заключите его в кавычки или разместите флаг -m перед остальными опциями. "
+                "Например: python -m src.generate_card -o output/card.jpg -m \"-15:00 ...\"."
+            )
+        super().error(message)
 
 DEFAULT_BACKGROUND = Path("assets/backgrounds/placeholder.jpg")
 DEFAULT_DIRECTIONS = (
@@ -41,13 +56,20 @@ def build_card_data(
     weather_client = weather_client or WeatherClient()
     weather = weather_client.fetch()
 
+    scores = []
     if traffic_client is None:
         api_key = os.environ.get("YANDEX_TRAFFIC_API_KEY")
-        if not api_key:
-            raise RuntimeError("YANDEX_TRAFFIC_API_KEY environment variable is required for traffic data")
-        traffic_client = YandexTrafficClient(TrafficConfig(api_key=api_key, directions=DEFAULT_DIRECTIONS))
+        traffic_client = YandexTrafficClient(
+            TrafficConfig(directions=DEFAULT_DIRECTIONS, api_key=api_key or None)
+        )
 
-    scores = traffic_client.fetch_scores()
+    if traffic_client is not None:
+        try:
+            scores = traffic_client.fetch_scores()
+        except Exception as exc:  # pragma: no cover - defensive path
+            LOGGER.warning("Не удалось получить данные пробок: %s", exc)
+            scores = []
+
     score_map = {score.direction: score for score in scores}
     traffic_to_crimea = score_map.get("в Крым") or TrafficScore(direction="в Крым", score=0)
     traffic_to_kuban = score_map.get("на Кубань") or TrafficScore(direction="на Кубань", score=0)
@@ -74,15 +96,64 @@ def generate_card_image(
     return Image.open(BytesIO(image_bytes))
 
 
-def _read_message(path: str | os.PathLike[str] | None) -> str:
-    if path is None or str(path) == "-":
-        return os.sys.stdin.read()
-    return Path(path).read_text(encoding="utf-8")
+def _read_message(source: str | os.PathLike[str] | None) -> str:
+    if source is None:
+        text = os.sys.stdin.read()
+        if not text.strip():
+            raise RuntimeError(
+                "Текст сообщения не передан. Укажите файл через --message или вставьте текст в стандартный ввод."
+            )
+        return text
+
+    raw_value = str(source)
+    if raw_value == "-":
+        text = os.sys.stdin.read()
+        if not text.strip():
+            raise RuntimeError(
+                "Текст сообщения не передан. Укажите файл через --message или вставьте текст в стандартный ввод."
+            )
+        return text
+
+    candidate_path = Path(raw_value).expanduser()
+    search_paths = [candidate_path]
+    if not candidate_path.is_absolute():
+        repo_root = Path(__file__).resolve().parent.parent
+        search_paths.append(repo_root / candidate_path)
+
+    for path_option in search_paths:
+        if path_option.exists():
+            text = path_option.read_text(encoding="utf-8")
+            if not text.strip():
+                raise RuntimeError(f"Файл {path_option} пуст. Добавьте текст сообщения о мосте.")
+            return text
+
+    inline_candidate = raw_value.strip()
+    if inline_candidate.startswith("-") and inline_candidate != "-":
+        return inline_candidate
+
+    if any(separator in inline_candidate for separator in ("\n", "\r")) or " " in inline_candidate:
+        if not inline_candidate:
+            raise RuntimeError("Текст сообщения не передан. Добавьте описание ситуации на мосту.")
+        return inline_candidate
+
+    resolved_display = ", ".join(str(p.resolve()) for p in search_paths)
+    raise RuntimeError(
+        "Файл с сообщением не найден. Проверьте путь (проверены: "
+        f"{resolved_display}) или укажите '-' для ввода из терминала."
+    )
 
 
 def main(argv: Optional[list[str]] = None) -> None:
-    parser = argparse.ArgumentParser(description="Generate a Crimean Bridge situation card")
-    parser.add_argument("--message", "-m", help="Path to the message file or '-' to read from stdin", default="-")
+    parser = FriendlyArgumentParser(
+        description="Generate a Crimean Bridge situation card",
+        allow_abbrev=False,
+    )
+    parser.add_argument(
+        "--message",
+        "-m",
+        help="Путь к файлу с сообщением, '-' для чтения из stdin или сам текст (если содержит пробелы)",
+        default=None,
+    )
     parser.add_argument("--output", "-o", help="Path to save the generated image", default="card.png")
     parser.add_argument("--background", help="Optional path to a background image", default=None)
     parser.add_argument(
@@ -98,19 +169,69 @@ def main(argv: Optional[list[str]] = None) -> None:
         default=None,
     )
 
-    args = parser.parse_args(argv)
-    logging.basicConfig(level=getattr(logging, args.log_level.upper(), logging.INFO))
+    def _merge_message_arguments(raw_args: list[str]) -> list[str]:
+        if not raw_args:
+            return raw_args
 
-    message_text = _read_message(args.message)
+        message_flags = {"-m", "--message"}
+        known_flags = {
+            "-m",
+            "--message",
+            "-o",
+            "--output",
+            "--background",
+            "--traffic-key",
+            "--log-level",
+            "--figma-layer-config",
+        }
+
+        merged: list[str] = []
+        i = 0
+        while i < len(raw_args):
+            token = raw_args[i]
+            if token in message_flags:
+                merged.append(token)
+                i += 1
+                value_tokens: list[str] = []
+                while i < len(raw_args):
+                    current = raw_args[i]
+                    current_key = current.split("=", 1)[0]
+                    if current == "--":
+                        i += 1
+                        break
+                    if current_key in known_flags and value_tokens:
+                        break
+                    if current_key in known_flags and not value_tokens:
+                        break
+                    value_tokens.append(current)
+                    i += 1
+                if value_tokens:
+                    merged.append(" ".join(value_tokens))
+                continue
+
+            merged.append(token)
+            i += 1
+
+        return merged
+
+    raw_argv = list(argv) if argv is not None else sys.argv[1:]
+    args = parser.parse_args(_merge_message_arguments(raw_argv))
+    logging.basicConfig(level=getattr(logging, args.log_level.upper(), logging.INFO))
+    load_dotenv(logger=LOGGER)
+
+    try:
+        message_text = _read_message(args.message)
+    except RuntimeError as exc:
+        LOGGER.error("%s", exc)
+        raise SystemExit(1) from exc
 
     weather_client = WeatherClient()
 
-    traffic_client: YandexTrafficClient | None = None
-    traffic_key = args.traffic_key or os.environ.get("YANDEX_TRAFFIC_API_KEY")
-    if traffic_key:
-        traffic_client = YandexTrafficClient(TrafficConfig(api_key=traffic_key, directions=DEFAULT_DIRECTIONS))
-    else:
-        LOGGER.warning("Traffic key not provided; traffic fetch will fail")
+    traffic_key_raw = args.traffic_key or os.environ.get("YANDEX_TRAFFIC_API_KEY")
+    cleaned_traffic_key = traffic_key_raw.strip() if traffic_key_raw and traffic_key_raw.strip() else None
+    traffic_client = YandexTrafficClient(
+        TrafficConfig(directions=DEFAULT_DIRECTIONS, api_key=cleaned_traffic_key)
+    )
 
     card_data = build_card_data(
         message_text,
