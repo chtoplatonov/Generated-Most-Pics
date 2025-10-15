@@ -43,12 +43,21 @@ class YandexTrafficClient:
             "format": "json",
             "lang": "ru_RU",
             "origin": "maps-api",
+            "type": "probki",
             "ll": f"{direction.longitude},{direction.latitude}",
             "radius": direction.radius,
             "apikey": self.config.api_key,
         }
         response = requests.get(self.BASE_URL, params=params, timeout=self.config.timeout)
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else None
+            if status == 404:
+                raise ValueError(
+                    "Yandex Traffic API вернул 404. Проверьте, что ключ активирован и поддерживает сервис пробок."
+                ) from exc
+            raise
         payload = response.json()
         score = self._extract_score(payload)
         return _clamp_score(score)
