@@ -51,12 +51,20 @@ class BridgeCardBot:
         )
         self.traffic_client = YandexTrafficClient(TrafficConfig(api_key=traffic_key, directions=directions))
 
+        session_dir = Path(__file__).resolve().parent.parent / ".telegram_session"
+        try:
+            session_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:  # noqa: BLE001 - хотим дать понятную подсказку
+            raise RuntimeError(
+                "Не удалось подготовить папку для сессии Telegram. Проверьте права доступа и путь к проекту."
+            ) from exc
+
         self.client = Client(
             session_name,
             api_id=api_id,
             api_hash=api_hash,
             bot_token=bot_token,
-            workdir=str(Path(".telegram_session").absolute()),
+            workdir=str(session_dir),
         )
         self.client.add_handler(MessageHandler(self._on_message, filters.chat(self.source_chat)))
 
